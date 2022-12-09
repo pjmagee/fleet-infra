@@ -4,13 +4,13 @@ metadata:
   name: apps
   namespace: flux-system
 spec:
-  interval: 10m0s
+  interval: 5m0s
   dependsOn:
     - name: infrastructure
   sourceRef:
     kind: GitRepository
     name: flux-system
-  path: ./apps
+  path: ./apps/docker-desktop
   prune: true
   wait: true
   timeout: 5m0s
