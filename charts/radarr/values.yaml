@@ -1,0 +1,62 @@
+replicaCount: 1
+
+image:
+  repository: lscr.io/linuxserver/radarr
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+
+securityContext:
+  runAsNonRoot: false
+
+service:
+  type: ClusterIP
+  port: 7878
+
+volumes:
+  - name: config
+    hostPath: 
+      path: /run/desktop/mnt/host/m/docker/radarr
+      type: Directory
+  - name: nzbget
+    hostPath: 
+      path: /run/desktop/mnt/host/m/docker/downloads/nzbget/completed/radarr
+      type: Directory
+  - name: qbittorrent
+    hostPath: 
+      path: /run/desktop/mnt/host/m/docker/downloads/qbittorrent/completed/radarr
+      type: Directory
+  - name: import
+    hostPath: 
+      path: /run/desktop/mnt/host/m/docker/import
+      type: Directory
+  - name: movies
+    hostPath: 
+      path: /run/desktop/mnt/host/m/docker/media/movies
+      type: Directory
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}

@@ -1,0 +1,13 @@
+apiVersion: source.toolkit.fluxcd.io/v2beta1
+kind: HelmChart
+metadata:
+  name: nzbget
+  namespace: apps
+spec:
+  interval: 5m0s
+  chart: ./charts/nzbget
+  reconcileStrategy: ChartVersion
+  sourceRef: 
+    name: fleet
+    kind: GitRepository
+  version: '1.*'

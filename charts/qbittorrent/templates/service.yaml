@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "qbittorrent.fullname" . }}
+  labels:
+    {{- include "qbittorrent.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - name: http
+      port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP      
+    - name: "tcp"
+      port: 6881
+      targetPort: 6881
+      protocol: TCP      
+    - name: "udp"
+      port: 6881
+      targetPort: 6881
+      protocol: UDP      
+  selector:
+    {{- include "qbittorrent.selectorLabels" . | nindent 4 }}
