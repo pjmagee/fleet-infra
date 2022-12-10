@@ -1,0 +1,52 @@
+replicaCount: 1
+
+image:
+  repository: lscr.io/linuxserver/sabnzbd
+  pullPolicy: IfNotPresent
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+
+securityContext:
+  runAsNonRoot: false
+
+service:
+  type: ClusterIP
+  port: 8080
+
+volumes:
+  - name: config
+    hostPath: 
+      path: /run/desktop/mnt/host/m/docker/sabnzbd
+      type: Directory      
+  - name: incomplete-downloads
+    hostPath: 
+      path: /run/desktop/mnt/host/m/docker/downloads/sabnzbd/incomplete-downloads
+      type: Directory
+  - name: downloads
+    hostPath: 
+      path: /run/desktop/mnt/host/m/docker/downloads/sabnzbd/downloads
+      type: Directory
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}

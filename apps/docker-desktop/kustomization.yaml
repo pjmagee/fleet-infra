@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   - ../base/freshrss
   - ../base/nzbget
+  - ../base/sabnzbd
   - ../base/sonarr
   - ../base/radarr
   - ../base/qbittorrent

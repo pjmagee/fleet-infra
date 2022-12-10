@@ -1,0 +1,15 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: sabnzbd
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: charts/sabnzbd
+      version: 1.0.0
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+      valuesFile: charts/sabnzbd/values.yaml
