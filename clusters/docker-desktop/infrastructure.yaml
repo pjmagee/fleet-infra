@@ -11,4 +11,3 @@ spec:
   path: ./infrastructure/docker-desktop
   prune: true
   suspend: true
-  
