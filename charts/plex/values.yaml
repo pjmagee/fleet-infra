@@ -23,7 +23,7 @@ securityContext:
   runAsNonRoot: false
 
 service:
-  type: NodePort 
+  type: NodePort
   port: 32400
 
 volumes:
