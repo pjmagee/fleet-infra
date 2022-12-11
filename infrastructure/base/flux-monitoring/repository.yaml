@@ -2,6 +2,7 @@ apiVersion: source.toolkit.fluxcd.io/v1beta2
 kind: GitRepository
 metadata:
   name: flux-monitoring
+  namespace: flux-system
 spec:
   interval: 30m
   url: https://github.com/fluxcd/flux2

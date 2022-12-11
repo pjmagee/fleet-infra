@@ -10,4 +10,5 @@ spec:
     name: flux-system
   path: ./infrastructure/docker-desktop
   prune: true
-  suspend: true
+  wait: true
+  timeout: 5m0s
