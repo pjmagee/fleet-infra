@@ -8,3 +8,4 @@ resources:
   - ../base/radarr
   - ../base/qbittorrent
   - ../base/plex
+  - ../base/vault
