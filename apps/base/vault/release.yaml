@@ -6,8 +6,8 @@ spec:
   interval: 5m
   chart:
     spec:
-      chart: hashicorp/vault
-      version: 0.23.0
+      chart: vault
+      version: v0.23.0
       sourceRef:
         kind: HelmRepository
         name: hashicorp
