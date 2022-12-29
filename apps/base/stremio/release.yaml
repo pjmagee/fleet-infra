@@ -7,7 +7,7 @@ spec:
   chart:
     spec:
       chart: charts/stremio
-      version: 1.0.0
+      version: 1.0.1
       sourceRef:
         kind: GitRepository
         name: flux-system
