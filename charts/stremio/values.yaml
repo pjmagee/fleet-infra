@@ -1,0 +1,46 @@
+replicaCount: 1
+
+image:
+  repository: sleeyax/stremio-streaming-server
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+
+securityContext:
+  runAsNonRoot: false
+
+service:
+  type: ClusterIP
+  port: 11470
+
+volumes:
+  - name: config
+    hostPath: 
+      path: /run/desktop/mnt/host/m/docker/stremio
+      type: Directory
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
