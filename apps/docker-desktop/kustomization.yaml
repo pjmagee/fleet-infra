@@ -9,3 +9,4 @@ resources:
   - ../base/qbittorrent
   - ../base/plex
   - ../base/vault
+  - ../base/stremio
