@@ -7,7 +7,7 @@ spec:
   chart:
     spec:
       chart: squidex7
-      version: 1.0.1
+      version: 1.0.1      
       sourceRef:
         kind: HelmRepository
         name: squidex
@@ -19,11 +19,19 @@ spec:
     remediation:
       remediateLastFailure: false
   values:
-    ingress.enabled: true
-    service.port: 8888
-    service.type: "ClusterIP"
-    deployment.replicaCount: 1
-    image.tag: "7.0.2"
-    env.IDENTITY__ADMINEMAIL: "patrick.magee@live.co.uk"
-    env.IDENTITY__ADMINPASSWORD: "password"
-    env.IDENTITY__ADMINRECREATE: true
+    ingress:
+      enabled: false
+    service:
+      port: 8888
+      type: "ClusterIP"
+    deployment:
+      replicaCount: 1
+    image:
+      tag: "7.0.2"
+    env:
+      IDENTITY__ADMINEMAIL: "patrick.magee@live.co.uk"
+      IDENTITY__ADMINPASSWORD: "password"
+      IDENTITY__ADMINRECREATE: true
+      IDENTITY__ALLOWPASSWORDAUTH: true
+      IDENTITY__LOCKAUTOMATICALLY: true
+      URLS__ENFORCEHTTPS: false
