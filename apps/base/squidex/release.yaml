@@ -19,8 +19,11 @@ spec:
     remediation:
       remediateLastFailure: false
   values:
-    ingress.enabled: false
+    ingress.enabled: true
     service.port: 8888
     service.type: "ClusterIP"
     deployment.replicaCount: 1
     image.tag: "7.0.2"
+    env.IDENTITY__ADMINEMAIL: "patrick.magee@live.co.uk"
+    env.IDENTITY__ADMINPASSWORD: "password"
+    env.IDENTITY__ADMINRECREATE: true
