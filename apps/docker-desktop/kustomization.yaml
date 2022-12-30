@@ -10,3 +10,4 @@ resources:
   - ../base/plex
   - ../base/vault
   - ../base/stremio
+  - ../base/squidex
