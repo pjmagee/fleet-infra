@@ -2,6 +2,7 @@ apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
   name: squidex
+  namespace: squidex
 spec:
   interval: 5m
   chart:
@@ -18,6 +19,22 @@ spec:
   upgrade:
     remediation:
       remediateLastFailure: false
+  valuesFrom:
+    - kind: Secret
+      name: github
+      valuesKey: "ClientId"
+      targetPath: "env.IDENTITY__GITHUBCLIENT"
+      optional: false
+    - kind: Secret
+      name: github
+      targetPath: "env.IDENTITY__GITHUBSECRET"
+      valuesKey: "ClientSecret"
+      optional: false
+    - kind: Secret
+      name: admin-password
+      targetPath: "env.IDENTITY__ADMINPASSWORD"
+      valuesKey: "Password"
+      optional: false
   values:
     ingress:
       enabled: false
@@ -30,7 +47,6 @@ spec:
       tag: "7.0.2"
     env:
       IDENTITY__ADMINEMAIL: "patrick.magee@live.co.uk"
-      IDENTITY__ADMINPASSWORD: "password"
       IDENTITY__ADMINRECREATE: true
       IDENTITY__ALLOWPASSWORDAUTH: true
       IDENTITY__LOCKAUTOMATICALLY: true
