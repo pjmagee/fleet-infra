@@ -1,0 +1,17 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: squidex
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: squidex/squidex7
+      version: 1.0.1
+      sourceRef:
+        kind: HelmRepository
+        name: squidex
+        namespace: squidex
+      values:
+        ingress.enabled: false
+    
