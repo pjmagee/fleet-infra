@@ -40,21 +40,7 @@ spec:
       postgresql:
         postgresqlUsername: postgres
         postgresqlDatabase: secretpw
-    replicaCount: 1
-    postgresql:
-      enabled: true
-      image:
-        tag: 11.9.0-debian-10-r48
-    image:
-      repository: orchard-cms
-      tag: latest
-      pullPolicy: IfNotPresent
-    nameOverride: ""
-    fullnameOverride: ""
     disableMutualTls: false
-    service:
-      type: ClusterIP
-      port: 8899
     volumeClaim:
       enabled: false
       accessModes:
@@ -62,8 +48,8 @@ spec:
       size: 1Gi
       storageClass: default
     ingress:
-      enabled: false
+      enabled: true
       hosts:
-        - orchard-cms.local
+        - http://orchardcms.kubernetes.docker.internal
     environmentVariables:
       ASPNETCORE_ENVIRONMENT: production

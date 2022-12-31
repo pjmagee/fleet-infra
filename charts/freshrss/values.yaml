@@ -29,9 +29,15 @@ volumes:
     hostPath: 
       path: /run/desktop/mnt/host/m/docker/freshrss
       type: Directory
-            
 
-resources: {}
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: freshrss.localhost
+      paths:
+        - path: /
+          pathType: ImplementationSpecific           
 
 autoscaling:
   enabled: false

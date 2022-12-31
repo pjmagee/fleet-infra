@@ -7,7 +7,7 @@ spec:
   chart:
     spec:
       chart: charts/freshrss
-      version: 1.0.0
+      version: 1.0.2
       sourceRef:
         kind: GitRepository
         name: flux-system

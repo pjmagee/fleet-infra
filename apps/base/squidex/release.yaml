@@ -13,12 +13,6 @@ spec:
         kind: HelmRepository
         name: squidex
         namespace: squidex
-  install:
-    remediation:
-      retries: 3
-  upgrade:
-    remediation:
-      remediateLastFailure: false
   valuesFrom:
     - kind: Secret
       name: github
@@ -38,17 +32,12 @@ spec:
   values:
     ingress:
       enabled: true
-      hostName: squidex.kubernetes.docker.internal
-    service:
-      port: 8888
-      type: "ClusterIP"
-    deployment:
-      replicaCount: 1
+      hostName: squidex.localhost
     image:
       tag: "7.0.2"
     env:
       IDENTITY__ADMINEMAIL: "patrick.magee@live.co.uk"
-      URLS__BASEURL: http://squidex.kubernetes.docker.internal
+      URLS__BASEURL: http://squidex.localhost
       IDENTITY__ADMINRECREATE: true
       IDENTITY__ALLOWPASSWORDAUTH: true
       URLS__ENFORCEHTTPS: false
