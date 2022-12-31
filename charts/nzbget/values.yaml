@@ -22,7 +22,7 @@ securityContext:
 
 service:
   type: ClusterIP
-  port: 6789
+  port: 80
 
 volumes:
   - name: config
@@ -33,6 +33,16 @@ volumes:
     hostPath: 
       path: /run/desktop/mnt/host/m/docker/downloads/nzbget
       type: Directory
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: nzbget.localhost
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
 
 resources: {}
 
