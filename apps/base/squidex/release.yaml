@@ -37,7 +37,7 @@ spec:
       optional: false
   values:
     ingress:
-      enabled: false
+      enabled: true
     service:
       port: 8888
       type: "ClusterIP"
@@ -49,5 +49,4 @@ spec:
       IDENTITY__ADMINEMAIL: "patrick.magee@live.co.uk"
       IDENTITY__ADMINRECREATE: true
       IDENTITY__ALLOWPASSWORDAUTH: true
-      IDENTITY__LOCKAUTOMATICALLY: true
       URLS__ENFORCEHTTPS: false

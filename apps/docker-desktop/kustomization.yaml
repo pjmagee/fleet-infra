@@ -11,3 +11,4 @@ resources:
   - ../base/vault
   - ../base/stremio
   - ../base/squidex
+  - ../base/orchardcms

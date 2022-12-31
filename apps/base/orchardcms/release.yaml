@@ -1,0 +1,69 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: orchardcms
+  namespace: orchardcms
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: orchard-cms
+      version: 2.0.2
+      sourceRef:
+        kind: HelmRepository
+        name: statcan
+        namespace: statcan
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      remediateLastFailure: false
+  valuesFrom: []
+    # - kind: Secret
+    #   name: github
+    #   valuesKey: "ClientId"
+    #   targetPath: "env.IDENTITY__GITHUBCLIENT"
+    #   optional: false
+    # - kind: Secret
+    #   name: github
+    #   targetPath: "env.IDENTITY__GITHUBSECRET"
+    #   valuesKey: "ClientSecret"
+    #   optional: false
+    # - kind: Secret
+    #   name: admin-password
+    #   targetPath: "env.IDENTITY__ADMINPASSWORD"
+    #   valuesKey: "Password"
+    #   optional: false
+  values:
+    global:
+      postgresql:
+        postgresqlUsername: postgres
+        postgresqlDatabase: secretpw
+    replicaCount: 1
+    postgresql:
+      enabled: true
+      image:
+        tag: 11.9.0-debian-10-r48
+    image:
+      repository: orchard-cms
+      tag: latest
+      pullPolicy: IfNotPresent
+    nameOverride: ""
+    fullnameOverride: ""
+    disableMutualTls: false
+    service:
+      type: ClusterIP
+      port: 8899
+    volumeClaim:
+      enabled: false
+      accessModes:
+        - ReadWriteOnce
+      size: 1Gi
+      storageClass: default
+    ingress:
+      enabled: false
+      hosts:
+        - orchard-cms.local
+    environmentVariables:
+      ASPNETCORE_ENVIRONMENT: production
