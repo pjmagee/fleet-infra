@@ -38,6 +38,7 @@ spec:
   values:
     ingress:
       enabled: true
+      hostName: squidex.kubernetes.docker.internal
     service:
       port: 8888
       type: "ClusterIP"
