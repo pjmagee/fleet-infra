@@ -20,21 +20,6 @@ spec:
     remediation:
       remediateLastFailure: false
   valuesFrom: []
-    # - kind: Secret
-    #   name: github
-    #   valuesKey: "ClientId"
-    #   targetPath: "env.IDENTITY__GITHUBCLIENT"
-    #   optional: false
-    # - kind: Secret
-    #   name: github
-    #   targetPath: "env.IDENTITY__GITHUBSECRET"
-    #   valuesKey: "ClientSecret"
-    #   optional: false
-    # - kind: Secret
-    #   name: admin-password
-    #   targetPath: "env.IDENTITY__ADMINPASSWORD"
-    #   valuesKey: "Password"
-    #   optional: false
   values:
     global:
       postgresql:
@@ -50,6 +35,6 @@ spec:
     ingress:
       enabled: true
       hosts:
-        - http://orchardcms.kubernetes.docker.internal
+        - http://orchardcms.local
     environmentVariables:
       ASPNETCORE_ENVIRONMENT: production
