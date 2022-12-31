@@ -47,6 +47,7 @@ spec:
       tag: "7.0.2"
     env:
       IDENTITY__ADMINEMAIL: "patrick.magee@live.co.uk"
+      URLS__BASEURL: http://squidex.kubernetes.docker.internal
       IDENTITY__ADMINRECREATE: true
       IDENTITY__ALLOWPASSWORDAUTH: true
       URLS__ENFORCEHTTPS: false
