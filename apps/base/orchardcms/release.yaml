@@ -35,6 +35,6 @@ spec:
     ingress:
       enabled: true
       hosts:
-        - http://orchardcms.local
+        - orchardcms.localhost
     environmentVariables:
       ASPNETCORE_ENVIRONMENT: production
