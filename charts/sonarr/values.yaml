@@ -22,7 +22,16 @@ securityContext:
 
 service:
   type: ClusterIP
-  port: 8989
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: sonarr.localhost
+      paths:
+        - path: /
+          pathType: ImplementationSpecific  
 
 volumes:
   - name: config

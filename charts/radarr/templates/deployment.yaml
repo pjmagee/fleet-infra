@@ -53,7 +53,7 @@ spec:
               mountPath: /movies
           ports:
             - name: http
-              containerPort: {{ .Values.service.port }}
+              containerPort: 7878
               protocol: TCP
           livenessProbe:
             httpGet:

@@ -53,7 +53,7 @@ spec:
               mountPath: /tv
           ports:
             - name: http
-              containerPort: {{ .Values.service.port }}
+              containerPort: 8989
               protocol: TCP
           livenessProbe:
             httpGet:

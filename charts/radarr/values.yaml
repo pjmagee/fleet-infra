@@ -22,7 +22,16 @@ securityContext:
 
 service:
   type: ClusterIP
-  port: 7878
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: radarr.localhost
+      paths:
+        - path: /
+          pathType: ImplementationSpecific      
 
 volumes:
   - name: config
