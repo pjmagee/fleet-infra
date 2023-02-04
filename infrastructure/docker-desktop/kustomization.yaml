@@ -5,3 +5,4 @@ resources:
   - ./hashicorp
   - ./squidex
   - ./statcan
+  - ./1password
