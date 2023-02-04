@@ -4,3 +4,4 @@ namespace: 1password
 resources:
   - namespace.yaml
   - repository.yaml
+  - release.yaml
