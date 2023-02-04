@@ -8,7 +8,7 @@ resources:
   - ../base/radarr
   - ../base/qbittorrent
   - ../base/plex
-  - ../base/vault
-  - ../base/stremio
-  - ../base/squidex
-  - ../base/orchardcorecms
+  # - ../base/vault
+  # - ../base/stremio
+  # - ../base/squidex
+  # - ../base/orchardcorecms
