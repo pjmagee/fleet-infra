@@ -18,11 +18,22 @@ podAnnotations: {}
 podSecurityContext: {}
 
 securityContext:
-  runAsNonRoot: false
+  fsGroup: 1000
+  runAsUser: 1000
+  runAsGroup: 1000
 
 service:
   type: ClusterIP
-  port: 8080
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: sabnzbd.localhost
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
 
 volumes:
   - name: config

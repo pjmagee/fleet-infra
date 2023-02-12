@@ -3,7 +3,7 @@ replicaCount: 1
 image:
   repository: sleeyax/stremio-streaming-server
   pullPolicy: IfNotPresent
-  tag: "latest"
+  tag: latest
 
 imagePullSecrets: []
 nameOverride: ""
@@ -18,17 +18,28 @@ podAnnotations: {}
 podSecurityContext: {}
 
 securityContext:
-  runAsNonRoot: false
+  fsGroup: 1000
+  runAsUser: 1000
+  runAsGroup: 1000
 
 service:
   type: ClusterIP
-  port: 11470
+  port: 80
 
 volumes:
   - name: config
     hostPath: 
       path: /run/desktop/mnt/host/m/docker/stremio
       type: Directory
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: stremio.localhost
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
 
 resources: {}
 
