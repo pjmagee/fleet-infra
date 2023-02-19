@@ -23,8 +23,17 @@ securityContext:
   runAsNonRoot: false
 
 service:
-  type: NodePort
-  port: 32400
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: plex.localhost
+      paths:
+        - path: /
+          pathType: ImplementationSpecific  
 
 volumes:
   - name: config

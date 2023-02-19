@@ -18,9 +18,7 @@ podAnnotations: {}
 podSecurityContext: {}
 
 securityContext:
-  fsGroup: 1000
-  runAsUser: 1000
-  runAsGroup: 1000
+  runAsNonRoot: false
 
 service:
   type: ClusterIP
@@ -55,7 +53,5 @@ autoscaling:
   # targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
-
 tolerations: []
-
 affinity: {}

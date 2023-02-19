@@ -7,7 +7,7 @@ spec:
   chart:
     spec:
       chart: charts/nzbget
-      version: 1.0.2
+      version: 1.2.0
       sourceRef:
         kind: GitRepository
         name: flux-system

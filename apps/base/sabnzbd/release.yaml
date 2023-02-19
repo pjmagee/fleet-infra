@@ -7,7 +7,7 @@ spec:
   chart:
     spec:
       chart: charts/sabnzbd
-      version: 1.0.1
+      version: 1.2.0
       sourceRef:
         kind: GitRepository
         name: flux-system

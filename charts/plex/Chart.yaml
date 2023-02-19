@@ -2,5 +2,5 @@ apiVersion: v2
 name: plex
 description: plex for my K8s docker-desktop node
 type: application
-version: 1.0.0
+version: 1.2.0
 appVersion: "1.29.2.6364-6d72b0cf6-ls145"

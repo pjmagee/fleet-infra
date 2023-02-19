@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: charts/qbittorrent
-      version: 1.0.4
+      version: 1.2.0
       sourceRef:
         kind: GitRepository
         name: flux-system
