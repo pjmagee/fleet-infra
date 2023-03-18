@@ -1,8 +1,0 @@
-apiVersion: source.toolkit.fluxcd.io/v1beta2
-kind: HelmRepository
-metadata:
-  name: squidex
-  namespace: squidex
-spec:
-  interval: 5m0s
-  url: https://squidex.github.io/squidex/helm/
