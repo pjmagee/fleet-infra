@@ -1,9 +1,9 @@
 replicaCount: 1
 
 image:
-  repository: stremio/server
+  repository: lscr.io/linuxserver/budge
   pullPolicy: IfNotPresent
-  tag: latest
+  tag: ""
 
 imagePullSecrets: []
 nameOverride: ""
@@ -27,19 +27,17 @@ service:
 volumes:
   - name: config
     hostPath: 
-      path: /run/desktop/mnt/host/m/docker/stremio
+      path: /run/desktop/mnt/host/m/docker/budge
       type: Directory
 
 ingress:
   enabled: true
   className: nginx
   hosts:
-    - host: stremio.localhost
+    - host: budge.localhost
       paths:
         - path: /
-          pathType: ImplementationSpecific
-
-resources: {}
+          pathType: ImplementationSpecific           
 
 autoscaling:
   enabled: false
@@ -49,7 +47,5 @@ autoscaling:
   # targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
-
 tolerations: []
-
 affinity: {}

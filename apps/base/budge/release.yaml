@@ -1,16 +1,15 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: plex
+  name: budge
 spec:
-  interval: 10m
+  interval: 1h
   chart:
     spec:
-      reconcileStrategy: ChartVersion      
-      chart: charts/plex
+      chart: charts/budge
       version: 1.2.1
       sourceRef:
         kind: GitRepository
         name: flux-system
         namespace: flux-system
-      valuesFile: charts/plex/values.yaml
+      valuesFile: charts/budge/values.yaml

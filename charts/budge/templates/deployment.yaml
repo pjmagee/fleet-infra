@@ -1,16 +1,16 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "stremio.fullname" . }}
+  name: {{ include "budge.fullname" . }}
   labels:
-    {{- include "stremio.labels" . | nindent 4 }}
+    {{- include "budge.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
   selector:
     matchLabels:
-      {{- include "stremio.selectorLabels" . | nindent 6 }}
+      {{- include "budge.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -18,13 +18,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "stremio.selectorLabels" . | nindent 8 }}
+        {{- include "budge.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "stremio.serviceAccountName" . }}
+      serviceAccountName: {{ include "budge.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -34,16 +34,18 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:          
-            - name: FIX_UNSUPPORTED_MEDIA
-              value: "1"      
-            - name: NO_CORS   
-              value: "1"      
+            - name: PGID
+              value: "1000"
+            - name: PUID
+              value: "1000"
+            - name: TZ
+              value: Europe/London
           volumeMounts:
             - name: config
-              mountPath: /root/.stremio-server
+              mountPath: /config
           ports:
             - name: http
-              containerPort: 11470
+              containerPort: {{ .Values.service.port }}
               protocol: TCP
           livenessProbe:
             httpGet:

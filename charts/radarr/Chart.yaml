@@ -3,4 +3,4 @@ name: radarr
 description: radarr for my K8s docker-desktop node
 type: application
 version: 1.2.0
-appVersion: "4.2.4.6635-ls158"
+appVersion: "4.7.5.7809-ls186"
