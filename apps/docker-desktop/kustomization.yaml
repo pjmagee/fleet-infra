@@ -8,6 +8,7 @@ resources:
   - ../base/radarr
   - ../base/qbittorrent
   - ../base/budge
+  - ../base/changedetection
   # - ../base/plex
   # - ../base/stremio
   # - ../base/vault
