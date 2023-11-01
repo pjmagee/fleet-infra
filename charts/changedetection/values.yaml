@@ -24,6 +24,9 @@ service:
   type: ClusterIP
   port: 80
 
+container:
+  port: 5000
+
 volumes:
   - name: config
     hostPath: 
