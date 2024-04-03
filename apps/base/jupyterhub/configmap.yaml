@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: jupyterhub-config
+  namespace: jupyterhub
+data:
+  yaml: |
+    proxy:
+      secretToken: "89fd0ce1fe8445c797448bf66e08c32711702cff046bda63bb2c174fd7539585"
+    singleuser:
+      image:
+        name: secana/dotnet-interactive:latest
+        tag: latest
+      storage:
+        type: hostPath
+        extraVolumes:
+          - name: jupyterhub-user-data
+            hostPath:
+              path: /run/desktop/mnt/host/m/docker/jupyterhub
+              type: DirectoryOrCreate
