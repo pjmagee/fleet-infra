@@ -1,0 +1,8 @@
+apiVersion: source.toolkit.fluxcd.io/v1beta1
+kind: HelmRepository
+metadata:
+  name: jupyterhub
+  namespace: flux-system  # Adjust if using a different namespace for Flux resources
+spec:
+  interval: 168h  # 7 days, or once a week
+  url: https://jupyterhub.github.io/helm-chart/
