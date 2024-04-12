@@ -7,9 +7,9 @@ resources:
   - ../base/sonarr
   - ../base/radarr
   - ../base/qbittorrent
-  - ../base/budge
   - ../base/changedetection
-  - ../base/jupyterhub
+  # - ../base/budge
+  # - ../base/jupyterhub
   # - ../base/plex
   # - ../base/stremio
   # - ../base/vault
