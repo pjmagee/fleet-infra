@@ -1,13 +1,15 @@
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
+apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: freshrss
+  namespace: freshrss
 spec:
-  interval: 5m
+  interval: 1h
   chart:
     spec:
       chart: charts/freshrss
       version: 1.2.1
+      appVersion: "1.24.1-ls230"
       sourceRef:
         kind: GitRepository
         name: flux-system

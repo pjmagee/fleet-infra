@@ -31,15 +31,15 @@ ingress:
     - host: qbittorrent.localhost
       paths:
         - path: /
-          pathType: ImplementationSpecific           
+          pathType: ImplementationSpecific
 
 volumes:
   - name: config
-    hostPath: 
+    hostPath:
       path: /run/desktop/mnt/host/m/docker/qbittorrent
       type: Directory
   - name: downloads
-    hostPath: 
+    hostPath:
       path: /run/desktop/mnt/host/m/docker/downloads/qbittorrent
       type: Directory
 

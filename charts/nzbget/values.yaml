@@ -26,11 +26,11 @@ service:
 
 volumes:
   - name: config
-    hostPath: 
+    hostPath:
       path: /run/desktop/mnt/host/m/docker/nzbget
-      type: Directory      
+      type: Directory
   - name: downloads
-    hostPath: 
+    hostPath:
       path: /run/desktop/mnt/host/m/docker/downloads/nzbget
       type: Directory
 

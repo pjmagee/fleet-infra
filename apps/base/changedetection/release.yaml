@@ -1,13 +1,15 @@
-apiVersion: helm.toolkit.fluxcd.io/v2beta1
+apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
   name: changedetection
+  namespace: changedetection
 spec:
-  interval: 5m
+  interval: 30m
   chart:
     spec:
       chart: charts/changedetection
       version: 1.2.2
+      appVersion: "0.45.23-ls110"
       sourceRef:
         kind: GitRepository
         name: flux-system
