@@ -8,8 +8,7 @@ spec:
   chart:
     spec:
       chart: charts/freshrss
-      version: 1.2.1
-      appVersion: "1.24.1-ls230"
+      version: 1.2.2
       sourceRef:
         kind: GitRepository
         name: flux-system

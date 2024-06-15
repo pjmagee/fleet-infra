@@ -8,8 +8,7 @@ spec:
   chart:
     spec:
       chart: charts/nzbget
-      version: 1.2.0
-      appVersion: "v24.1-ls144"
+      version: 1.2.1
       sourceRef:
         kind: GitRepository
         name: flux-system

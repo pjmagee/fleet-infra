@@ -8,8 +8,7 @@ spec:
   chart:
     spec:
       chart: charts/radarr
-      version: 1.2.1
-      appVersion: "5.6.0.8846-ls223"
+      version: 1.2.2
       sourceRef:
         kind: GitRepository
         name: flux-system

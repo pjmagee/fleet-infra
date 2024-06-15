@@ -8,8 +8,7 @@ spec:
   chart:
     spec:
       chart: charts/changedetection
-      version: 1.2.2
-      appVersion: "0.45.23-ls110"
+      version: 1.2.3
       sourceRef:
         kind: GitRepository
         name: flux-system

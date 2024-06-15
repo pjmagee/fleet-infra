@@ -2,5 +2,5 @@ apiVersion: v2
 name: freshrss
 description: A Helm chart for Kubernetes
 type: application
-version: 1.2.1
-appVersion: "1.21.0-ls191"
+version: 1.2.2
+appVersion: "1.24.1-ls230"

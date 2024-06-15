@@ -8,8 +8,7 @@ spec:
   chart:
     spec:
       chart: charts/sonarr
-      version: 1.2.0
-      appVersion: "4.0.5.1710-ls242"
+      version: 1.2.1
       sourceRef:
         kind: GitRepository
         name: flux-system
