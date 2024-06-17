@@ -8,9 +8,11 @@ spec:
   chart:
     spec:
       chart: charts/freshrss
-      version: 1.2.2
+      version: 2.0.0
       sourceRef:
         kind: GitRepository
         name: flux-system
         namespace: flux-system
-      valuesFile: charts/freshrss/values.yaml
+      values:
+        image:
+          tag: latest

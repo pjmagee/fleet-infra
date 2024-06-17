@@ -5,13 +5,15 @@ metadata:
   namespace: plex
 spec:
   interval: 1h
+  suspend: true
   chart:
     spec:
       reconcileStrategy: ChartVersion
       chart: charts/plex
-      version: 1.2.1
+      version: 2.0.0
       sourceRef:
         kind: GitRepository
         name: flux-system
         namespace: flux-system
-      valuesFile: charts/plex/values.yaml
+      values:
+        replicaCount: 0

@@ -4,13 +4,15 @@ metadata:
   name: orchardcorecms
   namespace: orchardcorecms
 spec:
+  suspend: true
   interval: 1h
   chart:
     spec:
       chart: charts/orchardcorecms
-      version: 1.0.1
+      version: 2.0.0
       sourceRef:
         kind: GitRepository
         name: flux-system
         namespace: flux-system
-      valuesFile: charts/orchardcorecms/values.yaml
+      values:
+        replicaCount: 0

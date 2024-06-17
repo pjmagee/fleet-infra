@@ -4,13 +4,15 @@ metadata:
   name: sonarr
   namespace: sonarr
 spec:
-  interval: 10m
+  interval: 1h
   chart:
     spec:
       chart: charts/sonarr
-      version: 1.2.1
+      version: 2.0.0
       sourceRef:
         kind: GitRepository
         name: flux-system
         namespace: flux-system
-      valuesFile: charts/sonarr/values.yaml
+      values:
+        image:
+          tag: latest

@@ -8,10 +8,10 @@ resources:
   - ../base/radarr
   - ../base/qbittorrent
   - ../base/changedetection
-  # - ../base/budge
-  # - ../base/jupyterhub
-  # - ../base/plex
-  # - ../base/stremio
-  # - ../base/vault
-  # - ../base/squidex
-  # - ../base/orchardcorecms
+  - ../base/budge
+  - ../base/jupyterhub
+  - ../base/plex
+  - ../base/stremio
+  - ../base/vault
+  - ../base/squidex
+  - ../base/orchardcorecms

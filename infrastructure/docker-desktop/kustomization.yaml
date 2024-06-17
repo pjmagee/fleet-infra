@@ -3,6 +3,7 @@ kind: Kustomization
 resources:
   # - ./jupyterhub
   # - ./1password
+  # - ./vault
   - ./ingress-nginx
   - ./weave-gitops-dashboard
   - ./dagger

@@ -8,9 +8,11 @@ spec:
   chart:
     spec:
       chart: charts/stremio
-      version: 1.2.0
+      version: 2.0.0
       sourceRef:
         kind: GitRepository
         name: flux-system
         namespace: flux-system
-      valuesFile: charts/stremio/values.yaml
+      values:
+        image:
+          tag: latest

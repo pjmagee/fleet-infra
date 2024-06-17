@@ -4,5 +4,5 @@ metadata:
   name: 1password
   namespace: 1password
 spec:
-  interval: 6h0m0s
+  interval: 6h
   url: https://1password.github.io/connect-helm-charts

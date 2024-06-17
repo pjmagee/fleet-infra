@@ -4,6 +4,7 @@ metadata:
   name: squidex
   namespace: squidex
 spec:
+  suspend: true
   interval: 1h
   chart:
     spec:
@@ -30,6 +31,7 @@ spec:
       valuesKey: "Password"
       optional: false
   values:
+    replicaCount: 0
     ingress:
       enabled: true
       hostName: squidex.localhost

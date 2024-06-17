@@ -26,7 +26,7 @@ service:
 
 volumes:
   - name: config
-    hostPath: 
+    hostPath:
       path: /run/desktop/mnt/host/m/docker/freshrss
       type: Directory
 
@@ -37,7 +37,7 @@ ingress:
     - host: freshrss.localhost
       paths:
         - path: /
-          pathType: ImplementationSpecific           
+          pathType: ImplementationSpecific
 
 autoscaling:
   enabled: false

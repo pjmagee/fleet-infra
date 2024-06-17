@@ -33,21 +33,21 @@ ingress:
     - host: plex.localhost
       paths:
         - path: /
-          pathType: ImplementationSpecific  
+          pathType: ImplementationSpecific
 
 volumes:
   - name: config
-    hostPath: 
+    hostPath:
       path: /run/desktop/mnt/host/m/docker/plex
       type: Directory
   - name: series
-    hostPath: 
+    hostPath:
       path: /run/desktop/mnt/host/m/docker/media/series
       type: Directory
   - name: movies
-    hostPath: 
+    hostPath:
       path: /run/desktop/mnt/host/m/docker/media/movies
-      type: Directory  
+      type: Directory
 
 resources: {}
 

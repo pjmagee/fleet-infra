@@ -4,6 +4,7 @@ metadata:
   name: jupyterhub
   namespace: jupyterhub
 spec:
+  suspend: true
   interval: 1h
   chart:
     spec:
@@ -14,6 +15,7 @@ spec:
         name: jupyterhub
         namespace: flux-system
   values:
+    replicaCount: 0
     ingress:
       enabled: true
       ingressClassName: nginx
