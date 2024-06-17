@@ -15,4 +15,4 @@ spec:
         namespace: flux-system
       values:
         image:
-          tag: latest
+          tag: "4.6.5-r0-ls335"
