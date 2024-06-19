@@ -12,6 +12,5 @@ resources:
   - ../base/jupyterhub
   - ../base/plex
   - ../base/stremio
-  - ../base/vault
   - ../base/squidex
   - ../base/orchardcorecms

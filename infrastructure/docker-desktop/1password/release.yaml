@@ -16,9 +16,11 @@ spec:
   values:
     connect:
       replicas: 1
-      credentials: 1password-credentials.json
+      credentialsKey: "1password-credentials.json"
+      credentialsName: 1password-credentials
     operator:
       create: true
       token:
-        value: "Kubernetes"
-      watchNamespace: []
+        key: operator.token.value
+        name: op-connect-token
+
