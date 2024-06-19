@@ -20,6 +20,5 @@ spec:
     operator:
       create: true
       token:
-        name: "onepassword-token"
-        value: "onepassword-token"
+        value: "Kubernetes"
       watchNamespace: []

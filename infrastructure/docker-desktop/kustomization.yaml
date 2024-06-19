@@ -7,3 +7,4 @@ resources:
   - ./ingress-nginx
   - ./weave-gitops-dashboard
   - ./dagger
+  - ./secrets
