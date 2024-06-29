@@ -5,6 +5,7 @@ metadata:
   namespace: 1password
 spec:
   interval: 60m
+  suspend: true
   chart:
     spec:
       chart: connect

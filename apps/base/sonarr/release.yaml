@@ -13,6 +13,6 @@ spec:
         kind: GitRepository
         name: flux-system
         namespace: flux-system
-      values:
-        image:
-          tag: latest
+  values:
+    image:
+      tag: latest
