@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: stremio/server
-  pullPolicy: IfNotPresent
+  imagePullPolicy: Always
   tag: latest
 
 imagePullSecrets: []

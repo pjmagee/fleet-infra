@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: lscr.io/linuxserver/radarr
-  pullPolicy: IfNotPresent
+  imagePullPolicy: Always
   tag: ""
 
 imagePullSecrets: []
