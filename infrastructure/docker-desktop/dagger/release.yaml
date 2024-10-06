@@ -4,7 +4,7 @@ metadata:
   name: dagger
   namespace: dagger
 spec:
-  interval: 30m
+  interval: 24h0m0s
   chart: 
     spec:
       chart: dagger-helm
@@ -12,5 +12,3 @@ spec:
         kind: HelmRepository
         name: dagger-helm-repo
         namespace: dagger
-      # values:
-        # engine.image.tag: v0.11.7

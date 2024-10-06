@@ -9,8 +9,4 @@ resources:
   - ../base/qbittorrent
   - ../base/changedetection
   - ../base/budge
-  - ../base/jupyterhub
-  - ../base/plex
   - ../base/stremio
-  - ../base/squidex
-  - ../base/orchardcorecms

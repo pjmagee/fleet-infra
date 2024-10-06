@@ -12,20 +12,3 @@ spec:
   prune: true
   wait: true
   timeout: 5m0s
----
-apiVersion: kustomize.toolkit.fluxcd.io/v1
-kind: Kustomization
-metadata:
-  name: fleet-infra-secrets
-  namespace: flux-system
-spec:
-  interval: 10m0s
-  sourceRef:
-    kind: GitRepository
-    name: fleet-infra-secrets
-  path: ./
-  prune: true
-  decryption:
-    provider: sops
-    secretRef:
-      name: sops-gpg
