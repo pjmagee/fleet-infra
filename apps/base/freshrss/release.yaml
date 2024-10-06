@@ -16,3 +16,4 @@ spec:
   values:
     image:
       tag: latest
+      pullPolicy: Always
