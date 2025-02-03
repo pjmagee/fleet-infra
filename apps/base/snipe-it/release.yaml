@@ -18,8 +18,7 @@ spec:
       key: base64:49HKaO8TY6ZM6JL/TmSlZMz5/iPepcmFxkAdImRzrWg=
       url: http://snipe-it.localhost:80
     mysql:
-      internal:
-        enabled: true
+      enabled: true
     image:
       tag: latest
       pullPolicy: Always
