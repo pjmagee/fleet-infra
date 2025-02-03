@@ -10,3 +10,4 @@ resources:
   - ../base/changedetection
   - ../base/budge
   - ../base/stremio
+  - ../base/snipe-it

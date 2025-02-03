@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "snipe-it.fullname" . }}
+  labels:
+    {{- include "snipe-it.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "snipe-it.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "snipe-it.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "snipe-it.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PGID
+              value: "1000"
+            - name: PUID
+              value: "1000"
+            - name: TZ
+              value: Europe/London
+            - name: APP_LOCALE
+              value: en-GB
+            - name: APP_KEY
+              value: "{{ .Values.app.key }}"
+            - name: APP_URL
+              value: "{{ .Values.app.url }}"
+            - name: APP_FORCE_TLS
+              value: false
+            - name: MYSQL_PORT_3306_TCP_ADDR
+              value: "{{- if .Values.mysql.enabled }}127.0.0.1{{- else }}{{ .Values.mysql.host }}{{- end }}"
+            - name: MYSQL_PORT_3306_TCP_PORT
+              value: "{{- if .Values.mysql.enabled }}{{ .Values.mysql.port }}{{- else }}{{ .Values.mysql.port }}{{- end }}"
+            - name: MYSQL_ENV_MYSQL_ROOT_PASSWORD
+              value: "{{ .Values.mysql.rootPassword }}"
+            - name: MYSQL_ENV_MYSQL_DATABASE
+              value: "{{ .Values.mysql.database }}"
+            - name: MYSQL_ENV_MYSQL_USER
+              value: "{{ .Values.mysql.user }}"
+            - name: MYSQL_ENV_MYSQL_PASSWORD
+              value: "{{ .Values.mysql.password }}"
+
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+{{- if .Values.mysql.enabled }}
+        - name: mysql
+          image: "{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
+          imagePullPolicy: {{ .Values.mysql.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.mysql.port }}
+              name: mysql
+          env:   
+            - name: MYSQL_ALLOW_EMPTY_PASSWORD
+              value: "yes"       
+            - name: MYSQL_DATABASE
+              value: {{ .Values.mysql.database }}
+            - name: MYSQL_USER
+              value: {{ .Values.mysql.user }}
+            - name: MYSQL_PASSWORD
+              value: {{ .Values.mysql.password }}
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+{{- end }}
+      volumes:
+        {{- toYaml .Values.volumes | nindent 8 }}
+        {{- if .Values.mysql.enabled }}
+          - name: mysql-data
+            hostPath:
+              path: "{{ .Values.mysql.hostPath.path }}"
+              type: "{{ .Values.mysql.hostPath.type }}"
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

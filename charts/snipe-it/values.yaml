@@ -1,0 +1,71 @@
+replicaCount: 1
+
+image:
+  repository: lscr.io/linuxserver/snipe-it
+  imagePullPolicy: Always
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+
+securityContext:
+  runAsNonRoot: false
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: snipe-it.localhost
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
+volumes:
+  - name: config
+    hostPath: 
+      path: /run/desktop/mnt/host/m/docker/snipe-it
+      type: Directory
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Append MySQL internal configuration
+mysql:
+  enabled: false
+  database: snipeit
+  user: snipeit
+  password: snipeit
+  port: 3306
+  image:
+    repository: mysql:5.7
+    tag: "5.7"
+    pullPolicy: IfNotPresent
+  hostPath:
+    path: /run/desktop/mnt/host/m/docker/snipe-it-mysql
+    type: Directory
+

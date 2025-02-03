@@ -1,0 +1,25 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: snipe-it
+  namespace: snipe-it
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: charts/snipe-it
+      version: 2.0.0
+      sourceRef:
+        kind: GitRepository
+        name: flux-system
+        namespace: flux-system
+  values:
+    app:
+      key: base64:49HKaO8TY6ZM6JL/TmSlZMz5/iPepcmFxkAdImRzrWg=
+      url: http://snipe-it.localhost:80
+    mysql:
+      internal:
+        enabled: true
+    image:
+      tag: latest
+      pullPolicy: Always
