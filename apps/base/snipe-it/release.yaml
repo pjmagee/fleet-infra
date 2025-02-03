@@ -8,17 +8,12 @@ spec:
   chart:
     spec:
       chart: charts/snipe-it
-      version: 2.0.0
+      version: 2.0.4
       sourceRef:
         kind: GitRepository
         name: flux-system
         namespace: flux-system
   values:
-    app:
-      key: base64:49HKaO8TY6ZM6JL/TmSlZMz5/iPepcmFxkAdImRzrWg=
-      url: http://snipe-it.localhost:80
-    mysql:
-      enabled: true
     image:
       tag: latest
       pullPolicy: Always

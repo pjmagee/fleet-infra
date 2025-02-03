@@ -43,22 +43,20 @@ spec:
             - name: APP_LOCALE
               value: en-GB
             - name: APP_KEY
-              value: "{{ .Values.app.key }}"
+              value: "{{ .Values.appKey }}"
             - name: APP_URL
-              value: "{{ .Values.app.url }}"
+              value: "{{ .Values.appUrl }}"
             - name: APP_FORCE_TLS
               value: "false"
             - name: MYSQL_PORT_3306_TCP_ADDR
-              value: "{{- if .Values.mysql.enabled }}127.0.0.1{{- else }}{{ .Values.mysql.host }}{{- end }}"
+              value: "{{ .Values.mysql.host }}"
             - name: MYSQL_PORT_3306_TCP_PORT
-              value: "{{- if .Values.mysql.enabled }}{{ .Values.mysql.port }}{{- else }}{{ .Values.mysql.port }}{{- end }}"
-            - name: MYSQL_ENV_MYSQL_ROOT_PASSWORD
-              value: "{{ .Values.mysql.rootPassword }}"
-            - name: MYSQL_ENV_MYSQL_DATABASE
+              value: "{{ .Values.mysql.port }}"
+            - name: MYSQL_DATABASE
               value: "{{ .Values.mysql.database }}"
-            - name: MYSQL_ENV_MYSQL_USER
+            - name: MYSQL_USER
               value: "{{ .Values.mysql.user }}"
-            - name: MYSQL_ENV_MYSQL_PASSWORD
+            - name: MYSQL_PASSWORD
               value: "{{ .Values.mysql.password }}"
 
           volumeMounts:
@@ -66,7 +64,7 @@ spec:
               mountPath: /config
           ports:
             - name: http
-              containerPort: 80
+              containerPort: {{ .Values.service.port }}
               protocol: TCP
           livenessProbe:
             httpGet:
@@ -78,7 +76,7 @@ spec:
               port: http
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
-{{ if .Values.mysql.enabled }}
+
         - name: mysql
           image: "{{ .Values.mysql.image.repository }}:{{ .Values.mysql.image.tag }}"
           imagePullPolicy: {{ .Values.mysql.image.pullPolicy }}
@@ -97,15 +95,8 @@ spec:
           volumeMounts:
             - name: mysql-data
               mountPath: /var/lib/mysql
-{{ end }}
       volumes:
-        {{- toYaml .Values.volumes | nindent 8 }}
-        {{- if .Values.mysql.enabled }}
-          - name: mysql-data
-            hostPath:
-              path: "{{ .Values.mysql.hostPath.path }}"
-              type: "{{ .Values.mysql.hostPath.type }}"
-        {{- end }}
+        {{- toYaml .Values.volumes | nindent 8 }}      
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

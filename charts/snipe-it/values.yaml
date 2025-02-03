@@ -38,6 +38,10 @@ volumes:
     hostPath: 
       path: /run/desktop/mnt/host/m/docker/snipe-it
       type: Directory
+  - name: mysql-data
+    hostPath:
+      path: /run/desktop/mnt/host/m/docker/snipe-it-mysql
+      type: Directory
 
 resources: {}
 
@@ -46,7 +50,7 @@ autoscaling:
   minReplicas: 1
   maxReplicas: 100
   targetCPUUtilizationPercentage: 80
-  # targetMemoryUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
 
 nodeSelector: {}
 
@@ -54,18 +58,18 @@ tolerations: []
 
 affinity: {}
 
+# Insert default app values to fix nil pointer errors in deployment template
+appKey: "base64:49HKaO8TY6ZM6JL/TmSlZMz5/iPepcmFxkAdImRzrWg="
+appUrl: "http://snipe-it.localhost"
+
 # Append MySQL internal configuration
 mysql:
-  enabled: false
   database: snipeit
   user: snipeit
   password: snipeit
   port: 3306
+  host: 127.0.0.1
   image:
-    repository: mysql:5.7
-    tag: "5.7"
+    repository: mysql
+    tag: "9.2"
     pullPolicy: IfNotPresent
-  hostPath:
-    path: /run/desktop/mnt/host/m/docker/snipe-it-mysql
-    type: Directory
-
