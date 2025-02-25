@@ -1,0 +1,2 @@
+# Helm chart secrets
+charts/*/secrets.yaml 

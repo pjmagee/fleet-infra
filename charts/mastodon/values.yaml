@@ -1,0 +1,109 @@
+replicaCount: 1
+
+image:
+  repository: lscr.io/linuxserver/mastodon
+  imagePullPolicy: Always
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+podSecurityContext: {}
+
+securityContext:
+  runAsNonRoot: false
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: mastodon.localhost
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
+volumes:
+  - name: config
+    hostPath: 
+      path: /run/desktop/mnt/host/m/docker/mastodon/config
+      type: Directory
+  - name: data
+    hostPath:
+      path: /run/desktop/mnt/host/m/docker/mastodon/data
+      type: Directory
+  - name: postgres-data
+    hostPath:
+      path: /run/desktop/mnt/host/m/docker/mastodon/postgres
+      type: Directory
+  - name: redis-data
+    hostPath:
+      path: /run/desktop/mnt/host/m/docker/mastodon/redis
+      type: Directory
+
+resources: {}
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# 1Password integration
+onePassword:
+  enabled: false
+  # Path to the 1Password vault item containing the secrets
+  # Format: "vaults/[vault-uuid-or-name]/items/[item-uuid-or-name]"
+  itemPath: "vaults/Kubernetes/items/mastodon"
+
+# Mastodon configuration variables
+mastodon:
+  localDomain: "mastodon.localhost"
+  webDomain: "mastodon.localhost"
+  singleUserMode: false
+  # Secret values - override these in a separate secrets.yaml file
+  # Or use 1Password integration by setting onePassword.enabled to true
+  secretKeyBase: "" # Required
+  otpSecret: "" # Required
+  vapidPrivateKey: "" # Required
+  vapidPublicKey: "" # Required
+
+# Postgres database configuration
+postgres:
+  database: mastodon
+  user: mastodon
+  # Secret values - override these in a separate secrets.yaml file
+  # Or use 1Password integration by setting onePassword.enabled to true
+  password: "" # Required
+  port: 5432
+  host: localhost
+  image:
+    repository: postgres
+    tag: "14"
+    pullPolicy: IfNotPresent
+
+# Redis configuration
+redis:
+  port: 6379
+  host: localhost
+  image:
+    repository: redis
+    tag: "7"
+    pullPolicy: IfNotPresent 

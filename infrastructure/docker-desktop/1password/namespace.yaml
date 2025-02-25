@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: 1password
+  labels:
+    app.kubernetes.io/name: 1password
+    app.kubernetes.io/part-of: infrastructure 

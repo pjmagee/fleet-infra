@@ -5,6 +5,7 @@ metadata:
   namespace: snipe-it
 spec:
   interval: 1h
+  suspend: true
   chart:
     spec:
       chart: charts/snipe-it

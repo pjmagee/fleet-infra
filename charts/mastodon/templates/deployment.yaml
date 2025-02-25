@@ -1,0 +1,149 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "mastodon.fullname" . }}
+  labels:
+    {{- include "mastodon.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "mastodon.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "mastodon.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "mastodon.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PGID
+              value: "1000"
+            - name: PUID
+              value: "1000"
+            - name: TZ
+              value: Europe/London
+            - name: LOCAL_DOMAIN
+              value: "{{ .Values.mastodon.localDomain }}"
+            - name: WEB_DOMAIN
+              value: "{{ .Values.mastodon.webDomain }}"
+            - name: SINGLE_USER_MODE
+              value: "{{ .Values.mastodon.singleUserMode }}"
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.onePassword.enabled }}{{ include "mastodon.fullname" . }}-secrets{{ else }}{{ include "mastodon.fullname" . }}-secrets{{ end }}
+                  key: SECRET_KEY_BASE
+            - name: OTP_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.onePassword.enabled }}{{ include "mastodon.fullname" . }}-secrets{{ else }}{{ include "mastodon.fullname" . }}-secrets{{ end }}
+                  key: OTP_SECRET
+            - name: VAPID_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.onePassword.enabled }}{{ include "mastodon.fullname" . }}-secrets{{ else }}{{ include "mastodon.fullname" . }}-secrets{{ end }}
+                  key: VAPID_PRIVATE_KEY
+            - name: VAPID_PUBLIC_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.onePassword.enabled }}{{ include "mastodon.fullname" . }}-secrets{{ else }}{{ include "mastodon.fullname" . }}-secrets{{ end }}
+                  key: VAPID_PUBLIC_KEY
+            - name: DB_HOST
+              value: "{{ .Values.postgres.host }}"
+            - name: DB_PORT
+              value: "{{ .Values.postgres.port }}"
+            - name: DB_NAME
+              value: "{{ .Values.postgres.database }}"
+            - name: DB_USER
+              value: "{{ .Values.postgres.user }}"
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.onePassword.enabled }}{{ include "mastodon.fullname" . }}-secrets{{ else }}{{ include "mastodon.fullname" . }}-secrets{{ end }}
+                  key: DB_PASS
+            - name: REDIS_HOST
+              value: "{{ .Values.redis.host }}"
+            - name: REDIS_PORT
+              value: "{{ .Values.redis.port }}"
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: data
+              mountPath: /data
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+
+        - name: postgres
+          image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+          imagePullPolicy: {{ .Values.postgres.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.postgres.port }}
+              name: postgres
+          env:
+            - name: POSTGRES_DB
+              value: "{{ .Values.postgres.database }}"
+            - name: POSTGRES_USER
+              value: "{{ .Values.postgres.user }}"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ if .Values.onePassword.enabled }}{{ include "mastodon.fullname" . }}-secrets{{ else }}{{ include "mastodon.fullname" . }}-secrets{{ end }}
+                  key: DB_PASS
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+
+        - name: redis
+          image: "{{ .Values.redis.image.repository }}:{{ .Values.redis.image.tag }}"
+          imagePullPolicy: {{ .Values.redis.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.redis.port }}
+              name: redis
+          volumeMounts:
+            - name: redis-data
+              mountPath: /data
+              
+      volumes:
+        {{- toYaml .Values.volumes | nindent 8 }}      
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }} 
