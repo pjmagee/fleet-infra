@@ -8,7 +8,7 @@ spec:
   chart:
     spec:
       chart: charts/nzbget
-      version: 2.0.0
+      version: 2.0.1  # Updated version to reflect 1Password integration changes
       sourceRef:
         kind: GitRepository
         name: flux-system

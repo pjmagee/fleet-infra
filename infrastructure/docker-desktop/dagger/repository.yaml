@@ -4,6 +4,6 @@ metadata:
   name: dagger-helm-repo
   namespace: dagger
 spec:
-  interval: 1h
+  interval: 24h
   url: oci://registry.dagger.io
   type: oci

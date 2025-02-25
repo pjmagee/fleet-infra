@@ -43,7 +43,6 @@ ingress:
         - path: /
           pathType: ImplementationSpecific
 
-
 resources: {}
 
 autoscaling:
@@ -56,3 +55,7 @@ autoscaling:
 nodeSelector: {}
 tolerations: []
 affinity: {}
+
+onePassword:
+  enabled: true
+  itemPath: vaults/Kubernetes/items/rhvijk6sydd2uma7cd2nqaz23y

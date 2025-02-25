@@ -1,7 +1,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2beta1
 kind: HelmRelease
 metadata:
-  name: 1password-operator
+  name: 1password
   namespace: 1password
 spec:
   interval: 1h
@@ -15,10 +15,13 @@ spec:
         namespace: 1password
   values:
     connect:
-      enabled: false
+      create: true
+      credentialsName: op-credentials
+      credentialsKey: 1password-credentials.json
+      serviceType: ClusterIP
     operator:
       create: true
       token:
-        name: "op-operator-token"
-        key: "token"
-      watchAllNamespaces: true 
+        name: op-operator-token
+        key: token
+      watchAllNamespaces: true

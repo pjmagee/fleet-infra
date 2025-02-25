@@ -35,7 +35,14 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           env:
             - name: NZBGET_PASS
+              {{- if .Values.onePassword.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "nzbget.fullname" . }}-secret
+                  key: {{ .Values.onePassword.passwordKey | default "password" }}
+              {{- else }}
               value: tegbzn6789
+              {{- end }}
             - name: NZBGET_USER
               value: nzbget
             - name: PGID
