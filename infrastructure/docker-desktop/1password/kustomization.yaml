@@ -4,4 +4,4 @@ namespace: 1password
 resources:
   - namespace.yaml
   - onepassword-connect.yaml
-  - onepassword-connect-operator.yaml 
+  - onepassword-operator.yaml 
