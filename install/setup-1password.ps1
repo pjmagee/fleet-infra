@@ -98,61 +98,71 @@ try {
 }
 
 # Create credentials secret
-Write-Host "🔐 Creating credentials secret..." -ForegroundColor Yellow
+Write-Host "🔐 Setting up 1Password credentials..." -ForegroundColor Yellow
 try {
-    # The 1Password Connect server expects the credentials to be base64 encoded
-    # See: https://github.com/1Password/connect/issues/62
-    Write-Host "🔧 Encoding credentials file for 1Password Connect..." -ForegroundColor Cyan
-    
-    # Read the JSON file and base64 encode it without line breaks
+    # Base64 encode the credentials file (chart will encode again, so this is correct)
     $credentialsJson = Get-Content $CredentialsFile -Raw
     $encodedCredentials = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($credentialsJson))
     
-    # Create a temporary file with the encoded credentials
-    $tempCredentialsFile = [System.IO.Path]::GetTempFileName()
-    $encodedCredentials | Out-File -FilePath $tempCredentialsFile -Encoding ASCII -NoNewline
-    
-    kubectl create secret generic op-credentials --namespace 1password `
-        --from-file=1password-credentials.json=$tempCredentialsFile `
-        --dry-run=client -o yaml | kubectl apply -f -
-    
-    # Clean up temp file
-    Remove-Item $tempCredentialsFile -Force
-    
-    Write-Host "✅ Credentials secret created/updated with proper encoding" -ForegroundColor Green
+    Write-Host "✅ Credentials encoded for Helm chart" -ForegroundColor Green
 } catch {
-    Write-Host "❌ Failed to create credentials secret: $_" -ForegroundColor Red
+    Write-Host "❌ Failed to encode credentials: $_" -ForegroundColor Red
     exit 1
 }
 
-# Create token secret
-Write-Host "🔐 Creating Connect token secret..." -ForegroundColor Yellow
+# Set up token
+Write-Host "🔐 Setting up Connect token..." -ForegroundColor Yellow
 try {
-    # Create the secret using a temporary file to avoid potential encoding issues
-    $tempTokenFile = [System.IO.Path]::GetTempFileName()
-    $ConnectToken | Out-File -FilePath $tempTokenFile -Encoding ASCII -NoNewline
-    
-    kubectl create secret generic onepassword-token --namespace 1password `
-        --from-file=token=$tempTokenFile `
-        --dry-run=client -o yaml | kubectl apply -f -
-    
-    # Clean up temp file
-    Remove-Item $tempTokenFile -Force
-    
-    Write-Host "✅ Connect token secret created/updated" -ForegroundColor Green
+    # Token is used directly as plain text
+    Write-Host "✅ Connect token ready" -ForegroundColor Green
 } catch {
-    Write-Host "❌ Failed to create Connect token secret: $_" -ForegroundColor Red
+    Write-Host "❌ Failed to process token: $_" -ForegroundColor Red
     exit 1
 }
 
-# Verify secrets
-Write-Host "🔍 Verifying secrets..." -ForegroundColor Yellow
-$secrets = kubectl get secrets -n 1password -o name
-if ($secrets -contains "secret/op-credentials" -and $secrets -contains "secret/onepassword-token") {
-    Write-Host "✅ All secrets created successfully" -ForegroundColor Green
-} else {
-    Write-Host "⚠️  Some secrets may be missing:" -ForegroundColor Yellow
-    kubectl get secrets -n 1password
+# Update HelmRelease with credentials and token
+Write-Host "🔧 Updating HelmRelease with credentials and token..." -ForegroundColor Yellow
+try {
+    # Patch the HelmRelease to include the credentials and token
+    $patchData = @{
+        spec = @{
+            values = @{
+                connect = @{
+                    create = $true
+                    credentials_base64 = $encodedCredentials
+                    serviceType = "ClusterIP"
+                }
+                operator = @{
+                    create = $true
+                    token = @{
+                        value = $ConnectToken
+                    }
+                    watchAllNamespaces = $true
+                }
+            }
+        }
+    } | ConvertTo-Json -Depth 10
+    
+    # Apply the patch
+    $patchData | kubectl patch helmrelease 1password -n 1password --type=merge --patch-file=-
+    
+    Write-Host "✅ HelmRelease updated with credentials and token" -ForegroundColor Green
+} catch {
+    Write-Host "❌ Failed to update HelmRelease: $_" -ForegroundColor Red
+    exit 1
+}
+
+# Verify HelmRelease configuration
+Write-Host "🔍 Verifying HelmRelease configuration..." -ForegroundColor Yellow
+try {
+    $helmReleaseValues = kubectl get helmrelease 1password -n 1password -o jsonpath='{.spec.values}' | ConvertFrom-Json
+    if ($helmReleaseValues.connect.credentials_base64 -and $helmReleaseValues.operator.token.value) {
+        Write-Host "✅ HelmRelease configured with credentials and token" -ForegroundColor Green
+    } else {
+        Write-Host "⚠️  HelmRelease may be missing credentials or token" -ForegroundColor Yellow
+    }
+} catch {
+    Write-Host "⚠️  Could not verify HelmRelease configuration: $_" -ForegroundColor Yellow
 }
 
 # Check if 1Password Helm release exists
@@ -201,11 +211,10 @@ if ($helmRelease) {
 }
 
 Write-Host "`n📝 Important Notes:" -ForegroundColor Cyan
-Write-Host "• Using your existing Helm release: infrastructure/docker-desktop/1password/release.yaml" -ForegroundColor White
+Write-Host "• Using direct values in Helm chart (no secrets required)" -ForegroundColor White
 Write-Host "• The Helm chart handles Connect server and operator deployment" -ForegroundColor White
-Write-Host "• If you see 'invalid configuration' errors, check:" -ForegroundColor White
-Write-Host "  - op-credentials secret contains valid credentials" -ForegroundColor White
-Write-Host "  - onepassword-token secret contains valid Connect token" -ForegroundColor White
+Write-Host "• Credentials are base64 encoded and embedded in HelmRelease" -ForegroundColor White
+Write-Host "• Connect token is embedded directly in HelmRelease" -ForegroundColor White
 Write-Host "• Use 'kubectl describe onepassworditem <name>' to debug item issues" -ForegroundColor White
 
 # Clean up any temporary fixed files
