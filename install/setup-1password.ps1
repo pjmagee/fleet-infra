@@ -123,7 +123,9 @@ try {
 # Update HelmRelease with credentials and token
 Write-Host "🔧 Updating HelmRelease with credentials and token..." -ForegroundColor Yellow
 try {
-    # Patch the HelmRelease to include the credentials and token
+    # Create a temporary patch file
+    $patchFile = [System.IO.Path]::GetTempFileName()
+    
     $patchData = @{
         spec = @{
             values = @{
@@ -143,8 +145,14 @@ try {
         }
     } | ConvertTo-Json -Depth 10
     
+    # Write patch data to temp file
+    $patchData | Out-File -FilePath $patchFile -Encoding UTF8
+    
     # Apply the patch
-    $patchData | kubectl patch helmrelease 1password -n 1password --type=merge --patch-file=-
+    kubectl patch helmrelease 1password -n 1password --type=merge --patch-file $patchFile
+    
+    # Clean up temp file
+    Remove-Item $patchFile -Force
     
     Write-Host "✅ HelmRelease updated with credentials and token" -ForegroundColor Green
 } catch {
