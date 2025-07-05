@@ -84,6 +84,9 @@ if (-not $ConnectToken) {
     exit 1
 }
 
+# Clean up the token (remove any trailing whitespace/newlines)
+$ConnectToken = $ConnectToken.Trim()
+
 # Create namespace
 Write-Host "🔧 Creating 1password namespace..." -ForegroundColor Yellow
 try {
@@ -97,10 +100,26 @@ try {
 # Create credentials secret
 Write-Host "🔐 Creating credentials secret..." -ForegroundColor Yellow
 try {
+    # The 1Password Connect server expects the credentials to be base64 encoded
+    # See: https://github.com/1Password/connect/issues/62
+    Write-Host "🔧 Encoding credentials file for 1Password Connect..." -ForegroundColor Cyan
+    
+    # Read the JSON file and base64 encode it without line breaks
+    $credentialsJson = Get-Content $CredentialsFile -Raw
+    $encodedCredentials = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($credentialsJson))
+    
+    # Create a temporary file with the encoded credentials
+    $tempCredentialsFile = [System.IO.Path]::GetTempFileName()
+    $encodedCredentials | Out-File -FilePath $tempCredentialsFile -Encoding ASCII -NoNewline
+    
     kubectl create secret generic op-credentials --namespace 1password `
-        --from-file=1password-credentials.json=$CredentialsFile `
+        --from-file=1password-credentials.json=$tempCredentialsFile `
         --dry-run=client -o yaml | kubectl apply -f -
-    Write-Host "✅ Credentials secret created/updated" -ForegroundColor Green
+    
+    # Clean up temp file
+    Remove-Item $tempCredentialsFile -Force
+    
+    Write-Host "✅ Credentials secret created/updated with proper encoding" -ForegroundColor Green
 } catch {
     Write-Host "❌ Failed to create credentials secret: $_" -ForegroundColor Red
     exit 1
@@ -109,9 +128,17 @@ try {
 # Create token secret
 Write-Host "🔐 Creating Connect token secret..." -ForegroundColor Yellow
 try {
+    # Create the secret using a temporary file to avoid potential encoding issues
+    $tempTokenFile = [System.IO.Path]::GetTempFileName()
+    $ConnectToken | Out-File -FilePath $tempTokenFile -Encoding ASCII -NoNewline
+    
     kubectl create secret generic onepassword-token --namespace 1password `
-        --from-literal=token=$ConnectToken `
+        --from-file=token=$tempTokenFile `
         --dry-run=client -o yaml | kubectl apply -f -
+    
+    # Clean up temp file
+    Remove-Item $tempTokenFile -Force
+    
     Write-Host "✅ Connect token secret created/updated" -ForegroundColor Green
 } catch {
     Write-Host "❌ Failed to create Connect token secret: $_" -ForegroundColor Red
