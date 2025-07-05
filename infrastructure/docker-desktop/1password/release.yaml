@@ -26,6 +26,15 @@ spec:
         name: onepassword-token
         key: token
       watchAllNamespaces: true
+      # Add required environment variables manually
+      customEnvVars:
+        - name: OP_CONNECT_HOST
+          value: "http://onepassword-connect:8080"
+        - name: OP_CONNECT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: onepassword-token
+              key: token
 
 # After creating the required secrets, restart the 1password release:
 # flux reconcile helmrelease 1password -n 1password
