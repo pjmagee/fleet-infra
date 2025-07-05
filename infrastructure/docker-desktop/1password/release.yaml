@@ -16,14 +16,15 @@ spec:
   values:
     connect:
       create: true
-      # Use base64-encoded credentials directly in values
-      credentials_base64: "" # This will be set by the setup script
+      credentialsName: op-credentials
+      credentialsKey: 1password-credentials.json
       serviceType: ClusterIP
     operator:
       create: true
-      # Use Connect token value directly
+      # Use Connect token from secret
       token:
-        value: "" # This will be set by the setup script
+        name: onepassword-token
+        key: token
       watchAllNamespaces: true
 
 # After creating the required secrets, restart the 1password release:
