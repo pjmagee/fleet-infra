@@ -24,11 +24,11 @@ spec:
       serviceType: ClusterIP
     operator:
       create: true
-      # Use Service Account token authentication (simpler for local development)
-      serviceAccountToken:
-        name: onepassword-service-account-token
-        # Create the service account token secret before applying this release:
-        # kubectl create secret generic onepassword-service-account-token --namespace 1password --from-literal=token=<your-service-account-token>
+      # Use Connect token authentication
+      token:
+        name: onepassword-token
+        # Create the connect token secret before applying this release:
+        # kubectl create secret generic onepassword-token --namespace 1password --from-literal=token=<your-connect-token>
         key: token
       watchAllNamespaces: true
 

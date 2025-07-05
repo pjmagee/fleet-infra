@@ -107,21 +107,21 @@ try {
 }
 
 # Create token secret
-Write-Host "🔐 Creating operator token secret..." -ForegroundColor Yellow
+Write-Host "🔐 Creating Connect token secret..." -ForegroundColor Yellow
 try {
-    kubectl create secret generic onepassword-service-account-token --namespace 1password `
+    kubectl create secret generic onepassword-token --namespace 1password `
         --from-literal=token=$ConnectToken `
         --dry-run=client -o yaml | kubectl apply -f -
-    Write-Host "✅ Operator token secret created/updated" -ForegroundColor Green
+    Write-Host "✅ Connect token secret created/updated" -ForegroundColor Green
 } catch {
-    Write-Host "❌ Failed to create operator token secret: $_" -ForegroundColor Red
+    Write-Host "❌ Failed to create Connect token secret: $_" -ForegroundColor Red
     exit 1
 }
 
 # Verify secrets
 Write-Host "🔍 Verifying secrets..." -ForegroundColor Yellow
 $secrets = kubectl get secrets -n 1password -o name
-if ($secrets -contains "secret/op-credentials" -and $secrets -contains "secret/onepassword-service-account-token") {
+if ($secrets -contains "secret/op-credentials" -and $secrets -contains "secret/onepassword-token") {
     Write-Host "✅ All secrets created successfully" -ForegroundColor Green
 } else {
     Write-Host "⚠️  Some secrets may be missing:" -ForegroundColor Yellow
@@ -178,7 +178,7 @@ Write-Host "• Using your existing Helm release: infrastructure/docker-desktop/
 Write-Host "• The Helm chart handles Connect server and operator deployment" -ForegroundColor White
 Write-Host "• If you see 'invalid configuration' errors, check:" -ForegroundColor White
 Write-Host "  - op-credentials secret contains valid credentials" -ForegroundColor White
-Write-Host "  - onepassword-service-account-token secret contains valid token" -ForegroundColor White
+Write-Host "  - onepassword-token secret contains valid Connect token" -ForegroundColor White
 Write-Host "• Use 'kubectl describe onepassworditem <name>' to debug item issues" -ForegroundColor White
 
 # Clean up any temporary fixed files
