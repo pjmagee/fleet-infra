@@ -3,83 +3,59 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "asa-server.fullname" . }}-server-files
+  name: {{ include "asa-server.fullname" . }}-binaries
   labels:
     {{- include "asa-server.labels" . | nindent 4 }}
-    component: server-files
+    component: binaries
 spec:
   accessModes:
-    {{- range .Values.persistence.serverFiles.accessModes }}
+    {{- range .Values.persistence.binaries.accessModes }}
     - {{ . | quote }}
     {{- end }}
   resources:
     requests:
-      storage: {{ .Values.persistence.serverFiles.size | quote }}
-  {{- if .Values.persistence.serverFiles.storageClass }}
-  storageClassName: {{ .Values.persistence.serverFiles.storageClass | quote }}
+      storage: {{ .Values.persistence.binaries.size | quote }}
+  {{- if .Values.persistence.binaries.storageClass }}
+  storageClassName: {{ .Values.persistence.binaries.storageClass | quote }}
   {{- end }}
 
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "asa-server.fullname" . }}-saved-data
+  name: {{ include "asa-server.fullname" . }}-instance
   labels:
     {{- include "asa-server.labels" . | nindent 4 }}
-    component: saved-data
+    component: instance
 spec:
   accessModes:
-    {{- range .Values.persistence.saved.accessModes }}
+    {{- range .Values.persistence.instance.accessModes }}
     - {{ . | quote }}
     {{- end }}
   resources:
     requests:
-      storage: {{ .Values.persistence.saved.size | quote }}
-  {{- if .Values.persistence.saved.storageClass }}
-  storageClassName: {{ .Values.persistence.saved.storageClass | quote }}
+      storage: {{ .Values.persistence.instance.size | quote }}
+  {{- if .Values.persistence.instance.storageClass }}
+  storageClassName: {{ .Values.persistence.instance.storageClass | quote }}
   {{- end }}
 
-{{- if .Values.server.clusterId }}
+{{- if .Values.server.clusterID }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "asa-server.fullname" . }}-cluster-data
+  name: {{ include "asa-server.fullname" . }}-cluster
   labels:
     {{- include "asa-server.labels" . | nindent 4 }}
-    component: cluster-data
+    component: cluster
 spec:
   accessModes:
-    {{- range .Values.persistence.cluster.accessModes }}
-    - {{ . | quote }}
-    {{- end }}
+    - ReadWriteMany
   resources:
     requests:
-      storage: {{ .Values.persistence.cluster.size | quote }}
-  {{- if .Values.persistence.cluster.storageClass }}
-  storageClassName: {{ .Values.persistence.cluster.storageClass | quote }}
-  {{- end }}
-{{- end }}
-
-{{- if .Values.api.enabled }}
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: {{ include "asa-server.fullname" . }}-api-logs
-  labels:
-    {{- include "asa-server.labels" . | nindent 4 }}
-    component: api-logs
-spec:
-  accessModes:
-    {{- range .Values.persistence.apiLogs.accessModes }}
-    - {{ . | quote }}
-    {{- end }}
-  resources:
-    requests:
-      storage: {{ .Values.persistence.apiLogs.size | quote }}
-  {{- if .Values.persistence.apiLogs.storageClass }}
-  storageClassName: {{ .Values.persistence.apiLogs.storageClass | quote }}
+      storage: 5Gi
+  {{- if .Values.persistence.binaries.storageClass }}
+  storageClassName: {{ .Values.persistence.binaries.storageClass | quote }}
   {{- end }}
 {{- end }}
 {{- end }}

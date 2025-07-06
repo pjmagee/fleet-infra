@@ -5,26 +5,37 @@ metadata:
   labels:
     {{- include "asa-server.labels" . | nindent 4 }}
 data:
-  # Server configuration
-  server-name: {{ .Values.server.sessionName | quote }}
-  map-name: {{ .Values.server.mapName | quote }}
-  max-players: {{ .Values.server.maxPlayers | quote }}
+  # Game.ini - Advanced game configuration (optional)
+  Game.ini: |
+    # Add custom Game.ini settings here
+    # This file is optional and will override default game settings
+    # Example:
+    # [/script/shootergame.shootergamemode]
+    # bPvEDisableFriendlyFire=true
   
-  {{- if .Values.server.modIds }}
-  mod-ids: {{ .Values.server.modIds | quote }}
-  {{- end }}
-  
-  {{- if .Values.server.passiveMods }}
-  passive-mods: {{ .Values.server.passiveMods | quote }}
-  {{- end }}
-  
-  {{- if .Values.server.clusterId }}
-  cluster-id: {{ .Values.server.clusterId | quote }}
-  {{- end }}
-  
-  # Performance settings
-  cpu-optimization: {{ .Values.performance.cpuOptimization | quote }}
-  
-  # Update settings
-  update-interval: {{ .Values.updates.interval | quote }}
-  restart-notice-minutes: {{ .Values.updates.restartNoticeMinutes | quote }}
+  # GameUserSettings.ini - Main server configuration
+  GameUserSettings.ini: |
+    # GameUserSettings.ini for ARK: Survival Ascended
+    [ServerSettings]
+    # Basic server settings - these can be overridden by command line args
+    ServerName={{ .Values.server.serverName }}
+    {{- if .Values.server.serverPassword }}
+    ServerPassword={{ .Values.server.serverPassword }}
+    {{- end }}
+    ServerAdminPassword={{ .Values.server.serverAdminPassword }}
+    MaxPlayers={{ .Values.server.maxPlayers }}
+    RCONEnabled=True
+    RCONPort={{ .Values.server.ports.rcon }}
+    
+    # Default multipliers (can be customized)
+    XPMultiplier=1.0
+    TamingSpeedMultiplier=1.0
+    HarvestAmountMultiplier=1.0
+    ResourcesRespawnPeriodMultiplier=1.0
+    
+    # Quality of life settings
+    AllowFlyerCarryPvE=true
+    ShowMapPlayerLocation=true
+    EnablePVPGamma=true
+    
+    # Custom settings can be added here

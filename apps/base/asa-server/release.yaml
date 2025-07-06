@@ -8,63 +8,35 @@ spec:
   chart:
     spec:
       chart: charts/asa-server
-      version: 1.0.0
+      version: 2.0.0
       sourceRef:
         kind: GitRepository
         name: flux-system
         namespace: flux-system
   values:
-    # ASA Server Configuration
-    instance:
-      name: "ragnarok-asa"
-      timezone: "Europe/London"
+    # Timezone for the container
+    timezone: "Europe/London"
     
-    # Server Settings - private server for friends
+    # Server Settings - private server for friends (Zerschranzer format)
     server:
-      mapName: "Ragnarok_WP"  # Ragnarok - Norse-themed map with ruins, longhouses, and hot springs (available June 2025)
-      sessionName: "Ragnarok Adventures"
-      password: ""  # Will be overridden by 1Password if enabled
-      adminPassword: "fallback-admin-pass"  # Will be overridden by 1Password if enabled
+      mapName: "Ragnarok_WP"  # Ragnarok - Norse-themed map with ruins, longhouses, and hot springs
+      serverName: "Ragnarok Adventures"  # Updated from sessionName to serverName
+      serverPassword: ""  # Will be overridden by 1Password if enabled  
+      serverAdminPassword: "fallback-admin-pass"  # Will be overridden by 1Password if enabled
       maxPlayers: 10  # Good size for friends group
+      saveDir: "ragnarok-asa"  # Unique save directory name
       
-      # Standard ports
+      # Standard ports  
       ports:
         game: 7777
+        query: 7778  # Updated to match Zerschranzer default (game port + 1)
         rcon: 27020
       
-      # Game configuration
-      battleye: false  # More flexible for private server
-      rconEnabled: true
+      # Mods - start with popular ones (updated field name for Zerschranzer)
+      modIDs: "731604991,889745138"  # S+ and Awesome SpyGlass
       
-      # MOTD
-      motd:
-        enabled: true
-        message: "Welcome to Ragnarok Adventures! Explore the Norse-themed landscape and survive together!"
-        duration: 30
-      
-      # Mods - start with popular ones
-      modIds: "731604991,889745138"  # S+ and Awesome SpyGlass
-      passiveMods: ""
-      
-      # Admin settings
-      showAdminCommandsInChat: false
-      
-      # Custom server args for better multiplayer experience
-      customArgs: "-ForceAllowCaveFlyers -PreventHibernation"
-    
-    # Performance settings for stable multiplayer
-    performance:
-      cpuOptimization: true  # Optimize performance
-      randomStartupDelay: false  # Not needed for single server
-      displayMonitorMessage: true  # Helpful for monitoring
-    
-    # Update settings - less frequent for stable gameplay
-    updates:
-      enabled: true
-      interval: 168  # Weekly updates
-      windowStart: "02:00 AM"
-      windowEnd: "04:00 AM"
-      restartNoticeMinutes: 30  # Give players more warning
+      # Custom start parameters (Zerschranzer format)
+      customStartParameters: "-NoBattlEye -crossplay -NoHangDetection -ForceAllowCaveFlyers -PreventHibernation"
     
     # Use hostPort for external access
     hostPort:
@@ -79,35 +51,27 @@ spec:
         cpu: 2
         memory: 8Gi
     
-    # Persistence configuration
+    # Persistence configuration (updated for Zerschranzer architecture)
     persistence:
       enabled: true
       
       # Use hostPath for direct control over storage location
       type: "hostPath"
       
-      # Host paths - stored under M drive docker folder
+      # Host paths - updated for Zerschranzer volume structure
       hostPaths:
-        serverFiles: "/run/desktop/mnt/host/m/docker/asa-server/server"
-        saved: "/run/desktop/mnt/host/m/docker/asa-server/saved"
-        cluster: "/run/desktop/mnt/host/m/docker/asa-server/cluster"
-        apiLogs: "/run/desktop/mnt/host/m/docker/asa-server/api-logs"
+        binaries: "/run/desktop/mnt/host/m/docker/asa-server/server-files"  # Shared ARK binaries
+        instance: "/run/desktop/mnt/host/m/docker/asa-server/instance"      # Instance data
       
-      # PVC settings (not used with hostPath but kept for reference)
-      serverFiles:
+      # PVC settings (available for production clusters)
+      binaries:
         size: 60Gi
         storageClass: ""
         accessModes:
           - ReadWriteOnce
       
-      saved:
-        size: 8Gi
-        storageClass: ""
-        accessModes:
-          - ReadWriteOnce
-      
-      cluster:
-        size: 2Gi
+      instance:
+        size: 15Gi  # Instance configs, saves, and logs
         storageClass: ""
         accessModes:
           - ReadWriteOnce
@@ -118,44 +82,35 @@ spec:
       runAsGroup: 7777
       fsGroup: 7777
     
-    # Service configuration
+    # Service configuration (simplified for Zerschranzer)
     service:
       type: ClusterIP
-      gamePort: 7777
-      rconPort: 27020
     
-    # Probe settings - ARK takes time to start, adjusted for multiplayer
+    # Probe settings - adjusted for Zerschranzer optimizations
     probes:
       startup:
         enabled: true
-        initialDelaySeconds: 300  # 5 minutes for server initialization
-        periodSeconds: 15
-        timeoutSeconds: 10
-        failureThreshold: 40  # 10 minutes total startup time
+        initialDelaySeconds: 180  # Zerschranzer is more optimized
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 60  # 10 minutes total startup time
         successThreshold: 1
       
       liveness:
         enabled: true
-        initialDelaySeconds: 60
-        periodSeconds: 30
-        timeoutSeconds: 10
-        failureThreshold: 3
-        successThreshold: 1
-      
-      readiness:
-        enabled: true
-        initialDelaySeconds: 60
+        initialDelaySeconds: 30
         periodSeconds: 15
         timeoutSeconds: 5
         failureThreshold: 5
         successThreshold: 1
-    
-    # Extra environment variables for Wine/Proton compatibility
-    extraEnvVars:
-      - name: STEAM_COMPAT_CLIENT_INSTALL_PATH
-        value: "/home/pok/.steam/steam"
-      - name: DISPLAY
-        value: ":0"
+      
+      readiness:
+        enabled: true
+        initialDelaySeconds: 30
+        periodSeconds: 10
+        timeoutSeconds: 5
+        failureThreshold: 3
+        successThreshold: 1
     
     # 1Password Integration for secure password management
     onePassword:

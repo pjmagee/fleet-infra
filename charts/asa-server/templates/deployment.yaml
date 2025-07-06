@@ -32,6 +32,40 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # Zerschranzer entrypoint command and args
+          command: ["/entrypoint.sh"]
+          args: 
+            - "run"
+            # ARK server map and session settings (single argument)
+            - >-
+              {{ .Values.server.mapName }}?listen
+              ?SessionName={{ .Values.server.serverName | replace " " "%20" }}
+              {{- if .Values.server.serverPassword }}?ServerPassword={{ .Values.server.serverPassword }}{{- end }}
+              ?ServerAdminPassword={{ .Values.server.serverAdminPassword }}
+              ?AltSaveDirectoryName={{ .Values.server.saveDir }}
+              ?RCONEnabled=True
+              ?Port={{ .Values.server.ports.game }}
+              ?QueryPort={{ .Values.server.ports.query }}
+              ?RCONPort={{ .Values.server.ports.rcon }}
+              ?MaxPlayers={{ .Values.server.maxPlayers }}
+              {{- if .Values.server.clusterID }}?ClusterDirOverride=/ark/cluster?ClusterId={{ .Values.server.clusterID }}{{- end }}
+            # Additional server flags
+            {{- if .Values.server.customStartParameters }}
+            {{- range (split " " .Values.server.customStartParameters) }}
+            {{- if . }}
+            - {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            {{- else }}
+            - "-NoBattlEye"
+            - "-crossplay"  
+            - "-NoHangDetection"
+            {{- end }}
+            {{- if .Values.server.modIDs }}
+            - "-mods={{ .Values.server.modIDs }}"
+            {{- end }}
+            - "-server"
+            - "-log"
           ports:
             - name: game-tcp
               containerPort: {{ .Values.server.ports.game }}
@@ -45,6 +79,12 @@ spec:
               {{- if .Values.hostPort.enabled }}
               hostPort: {{ .Values.server.ports.game }}
               {{- end }}
+            - name: query-udp
+              containerPort: {{ .Values.server.ports.query }}
+              protocol: UDP
+              {{- if .Values.hostPort.enabled }}
+              hostPort: {{ .Values.server.ports.query }}
+              {{- end }}
             - name: rcon
               containerPort: {{ .Values.server.ports.rcon }}
               protocol: TCP
@@ -52,105 +92,14 @@ spec:
               hostPort: {{ .Values.server.ports.rcon }}
               {{- end }}
           env:
-            # Instance configuration
-            - name: INSTANCE_NAME
-              value: {{ .Values.instance.name | quote }}
+            # Timezone (set to UTC as default for containers)
             - name: TZ
-              value: {{ .Values.instance.timezone | quote }}
+              value: {{ .Values.timezone | default "UTC" | quote }}
+            # UMASK for file permissions
+            - name: UMASK
+              value: "0007"
             
-            # Server settings
-            - name: MAP_NAME
-              value: {{ .Values.server.mapName | quote }}
-            - name: SESSION_NAME
-              value: {{ .Values.server.sessionName | quote }}
-            - name: SERVER_PASSWORD
-              {{- if .Values.onePassword.enabled }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "asa-server.fullname" . }}-secret
-                  key: {{ .Values.onePassword.serverPasswordKey }}
-              {{- else }}
-              value: {{ .Values.server.password | quote }}
-              {{- end }}
-            - name: SERVER_ADMIN_PASSWORD
-              {{- if .Values.onePassword.enabled }}
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "asa-server.fullname" . }}-secret
-                  key: {{ .Values.onePassword.adminPasswordKey }}
-              {{- else }}
-              value: {{ .Values.server.adminPassword | quote }}
-              {{- end }}
-            - name: MAX_PLAYERS
-              value: {{ .Values.server.maxPlayers | quote }}
-            - name: ASA_PORT
-              value: {{ .Values.server.ports.game | quote }}
-            - name: RCON_PORT
-              value: {{ .Values.server.ports.rcon | quote }}
-            
-            # Game configuration
-            - name: BATTLEEYE
-              value: {{ .Values.server.battleye | toString | upper | quote }}
-            - name: RCON_ENABLED
-              value: {{ .Values.server.rconEnabled | toString | upper | quote }}
-            
-            # API configuration
-            - name: API
-              value: {{ .Values.api.enabled | toString | upper | quote }}
-            
-            # Performance settings
-            - name: CPU_OPTIMIZATION
-              value: {{ .Values.performance.cpuOptimization | toString | upper | quote }}
-            - name: RANDOM_STARTUP_DELAY
-              value: {{ .Values.performance.randomStartupDelay | toString | upper | quote }}
-            - name: DISPLAY_POK_MONITOR_MESSAGE
-              value: {{ .Values.performance.displayMonitorMessage | toString | upper | quote }}
-            
-            # Update settings
-            - name: UPDATE_SERVER
-              value: {{ .Values.updates.enabled | toString | upper | quote }}
-            - name: CHECK_FOR_UPDATE_INTERVAL
-              value: {{ .Values.updates.interval | quote }}
-            - name: UPDATE_WINDOW_MINIMUM_TIME
-              value: {{ .Values.updates.windowStart | quote }}
-            - name: UPDATE_WINDOW_MAXIMUM_TIME
-              value: {{ .Values.updates.windowEnd | quote }}
-            - name: RESTART_NOTICE_MINUTES
-              value: {{ .Values.updates.restartNoticeMinutes | quote }}
-            
-            # MOTD settings
-            - name: ENABLE_MOTD
-              value: {{ .Values.server.motd.enabled | toString | upper | quote }}
-            {{- if .Values.server.motd.enabled }}
-            - name: MOTD
-              value: {{ .Values.server.motd.message | quote }}
-            - name: MOTD_DURATION
-              value: {{ .Values.server.motd.duration | quote }}
-            {{- end }}
-            
-            # Optional settings
-            {{- if .Values.server.showAdminCommandsInChat }}
-            - name: SHOW_ADMIN_COMMANDS_IN_CHAT
-              value: {{ .Values.server.showAdminCommandsInChat | toString | upper | quote }}
-            {{- end }}
-            {{- if .Values.server.clusterId }}
-            - name: CLUSTER_ID
-              value: {{ .Values.server.clusterId | quote }}
-            {{- end }}
-            {{- if .Values.server.modIds }}
-            - name: MOD_IDS
-              value: {{ .Values.server.modIds | quote }}
-            {{- end }}
-            {{- if .Values.server.passiveMods }}
-            - name: PASSIVE_MODS
-              value: {{ .Values.server.passiveMods | quote }}
-            {{- end }}
-            {{- if .Values.server.customArgs }}
-            - name: CUSTOM_SERVER_ARGS
-              value: {{ .Values.server.customArgs | quote }}
-            {{- end }}
-            
-            # Extra environment variables
+            # Extra environment variables (for custom configuration)
             {{- range .Values.extraEnvVars }}
             - name: {{ .name }}
               value: {{ .value | quote }}
@@ -163,8 +112,8 @@ spec:
                 - /bin/bash
                 - -c
                 - |
-                  # Check if server process is running
-                  pgrep -f "ArkAscendedServer.exe\|AsaApiLoader.exe" > /dev/null
+                  # Check if ARK server process is running (Zerschranzer uses Proton)
+                  pgrep -f "ArkAscendedServer.exe" > /dev/null
             initialDelaySeconds: {{ .Values.probes.startup.initialDelaySeconds }}
             periodSeconds: {{ .Values.probes.startup.periodSeconds }}
             timeoutSeconds: {{ .Values.probes.startup.timeoutSeconds }}
@@ -179,8 +128,8 @@ spec:
                 - /bin/bash
                 - -c
                 - |
-                  # Check if server process is running
-                  pgrep -f "ArkAscendedServer.exe\|AsaApiLoader.exe" > /dev/null
+                  # Check if ARK server process is running
+                  pgrep -f "ArkAscendedServer.exe" > /dev/null
             initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
@@ -195,7 +144,7 @@ spec:
                 - /bin/bash
                 - -c
                 - |
-                  # Check if server is listening on the game port
+                  # Check if server is listening on the game port using netstat
                   netstat -ln | grep -q ":{{ .Values.server.ports.game }} "
             initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
@@ -208,72 +157,65 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           
           volumeMounts:
-            # Server files
-            - name: server-files
-              mountPath: /home/pok/arkserver
-            # Saved games and config
-            - name: saved-data
-              mountPath: /home/pok/arkserver/ShooterGame/Saved
-            {{- if .Values.server.clusterId }}
-            # Cluster data
-            - name: cluster-data
-              mountPath: /home/pok/arkserver/ShooterGame/Saved/clusters
-            {{- end }}
-            {{- if .Values.api.enabled }}
-            # API logs
-            - name: api-logs
-              mountPath: /home/pok/arkserver/ShooterGame/Binaries/Win64/logs
+            # ARK server binaries volume (shared)
+            - name: ark-binaries
+              mountPath: /ark/binaries
+            # Instance-specific data (configs, saves, logs)
+            - name: ark-instance
+              mountPath: /ark/instance
+            # Configuration files from ConfigMap
+            - name: config
+              mountPath: /ark/instance/Game.ini
+              subPath: Game.ini
+            - name: config
+              mountPath: /ark/instance/GameUserSettings.ini
+              subPath: GameUserSettings.ini
+            {{- if .Values.server.clusterID }}
+            # Cluster data volume
+            - name: ark-cluster
+              mountPath: /ark/cluster
             {{- end }}
       
       volumes:
-        # Server files volume
-        - name: server-files
+        # Configuration files ConfigMap
+        - name: config
+          configMap:
+            name: {{ include "asa-server.fullname" . }}-config
+            defaultMode: 0644
+        # ARK server binaries volume (shared between instances)
+        - name: ark-binaries
           {{- if and .Values.persistence.enabled (eq .Values.persistence.type "hostPath") }}
           hostPath:
-            path: {{ .Values.persistence.hostPaths.serverFiles }}
+            path: {{ .Values.persistence.hostPaths.binaries }}
             type: DirectoryOrCreate
           {{- else if and .Values.persistence.enabled (eq .Values.persistence.type "pvc") }}
           persistentVolumeClaim:
-            claimName: {{ include "asa-server.fullname" . }}-server-files
+            claimName: {{ include "asa-server.fullname" . }}-binaries
           {{- else }}
           emptyDir: {}
           {{- end }}
-        # Saved data volume
-        - name: saved-data
+        # Instance-specific data volume (configs, saves, logs)
+        - name: ark-instance
           {{- if and .Values.persistence.enabled (eq .Values.persistence.type "hostPath") }}
           hostPath:
-            path: {{ .Values.persistence.hostPaths.saved }}
+            path: {{ .Values.persistence.hostPaths.instance }}
             type: DirectoryOrCreate
           {{- else if and .Values.persistence.enabled (eq .Values.persistence.type "pvc") }}
           persistentVolumeClaim:
-            claimName: {{ include "asa-server.fullname" . }}-saved-data
+            claimName: {{ include "asa-server.fullname" . }}-instance
           {{- else }}
           emptyDir: {}
           {{- end }}
-        {{- if .Values.server.clusterId }}
-        # Cluster data volume
-        - name: cluster-data
+        {{- if .Values.server.clusterID }}
+        # Cluster data volume (shared between clustered instances)
+        - name: ark-cluster
           {{- if and .Values.persistence.enabled (eq .Values.persistence.type "hostPath") }}
           hostPath:
-            path: {{ .Values.persistence.hostPaths.cluster }}
+            path: {{ .Values.persistence.hostPaths.cluster | default (printf "%s/clusters/%s" (.Values.persistence.hostPaths.binaries | dir) .Values.server.clusterID) }}
             type: DirectoryOrCreate
           {{- else if and .Values.persistence.enabled (eq .Values.persistence.type "pvc") }}
           persistentVolumeClaim:
-            claimName: {{ include "asa-server.fullname" . }}-cluster-data
-          {{- else }}
-          emptyDir: {}
-          {{- end }}
-        {{- end }}
-        {{- if .Values.api.enabled }}
-        # API logs volume
-        - name: api-logs
-          {{- if and .Values.persistence.enabled (eq .Values.persistence.type "hostPath") }}
-          hostPath:
-            path: {{ .Values.persistence.hostPaths.apiLogs }}
-            type: DirectoryOrCreate
-          {{- else if and .Values.persistence.enabled (eq .Values.persistence.type "pvc") }}
-          persistentVolumeClaim:
-            claimName: {{ include "asa-server.fullname" . }}-api-logs
+            claimName: {{ include "asa-server.fullname" . }}-cluster
           {{- else }}
           emptyDir: {}
           {{- end }}

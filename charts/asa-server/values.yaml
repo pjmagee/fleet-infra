@@ -4,73 +4,48 @@
 
 # ASA Server Configuration
 image:
-  repository: acekorneya/asa_server
+  repository: zerschranzer/ark-ascended-base
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "2_1_latest"
+  tag: "latest"
 
 nameOverride: ""
 fullnameOverride: ""
 
-# Instance configuration
-instance:
-  name: "asa-server"
-  timezone: "Europe/London"
+# Timezone for the container (optional, defaults to UTC)
+timezone: "UTC"
 
-# Server Settings
+# Server Settings (Zerschranzer configuration format)
 server:
-  # Map settings
-  mapName: "TheIsland_WP"  # TheIsland_WP, ScorchedEarth_WP, TheCenter_WP, Aberration_WP, Extinction_WP, Ragnarok_WP (ASA format)
-  sessionName: "My ASA Server"
-  password: ""  # Server password (leave empty for no password - ONLY NUMBERS AND CHARACTERS ALLOWED)
-  adminPassword: "arkadmin123"
+  # Basic settings
+  serverName: "My ASA Server"
+  serverPassword: ""  # Server password (leave empty for no password)
+  serverAdminPassword: "adminpassword"
   maxPlayers: 70
+  
+  # Map and world settings
+  mapName: "TheIsland_WP"  # TheIsland_WP, ScorchedEarth_WP, TheCenter_WP, Aberration_WP, Extinction_WP, Ragnarok_WP
+  saveDir: "asa-server"  # Must be unique per instance
   
   # Network configuration
   ports:
-    game: 7777
-    rcon: 27020
-  
-  # Game configuration
-  battleye: false
-  rconEnabled: true
-  
-  # MOTD (Message of the Day)
-  motd:
-    enabled: false
-    message: "Welcome to my server!"
-    duration: 30
-  
-  # Admin settings
-  showAdminCommandsInChat: false
-  
-  # Cluster settings
-  clusterId: "cluster"
+    game: 7777      # Port
+    query: 7778     # QueryPort (typically game port + 1)
+    rcon: 27020     # RCONPort
   
   # Mods
-  modIds: ""
-  passiveMods: ""
+  modIDs: ""  # Comma-separated mod IDs
   
-  # Custom server arguments
-  customArgs: ""
+  # Cluster settings
+  clusterID: ""  # Leave empty if not using clustering
+  
+  # Custom start parameters (Zerschranzer format)
+  customStartParameters: "-NoBattlEye -crossplay -NoHangDetection"
 
-# API Configuration (AsaApi)
-api:
-  enabled: false
-
-# Performance and Monitoring
-performance:
-  cpuOptimization: false
-  randomStartupDelay: true
-  displayMonitorMessage: false
-
-# Update settings
-updates:
-  enabled: true
-  interval: 24  # hours
-  windowStart: "12:00 AM"
-  windowEnd: "11:59 PM"
-  restartNoticeMinutes: 30
+# Docker image mode - no longer needed with Zerschranzer
+# API Configuration (AsaApi) - handled by the base image
+# Performance and Monitoring - handled by the base image
+# Update settings - handled by the base image
 
 # Resource limits
 resources:
@@ -81,7 +56,7 @@ resources:
     cpu: 1
     memory: 8Gi
 
-# Persistence
+# Persistence (Zerschranzer architecture)
 persistence:
   enabled: true
   
@@ -90,36 +65,20 @@ persistence:
   
   # Host paths (only used when type: "hostPath")
   hostPaths:
-    serverFiles: "/run/desktop/mnt/host/m/docker/asa-server/server"
-    saved: "/run/desktop/mnt/host/m/docker/asa-server/saved"
-    cluster: "/run/desktop/mnt/host/m/docker/asa-server/cluster"
-    apiLogs: "/run/desktop/mnt/host/m/docker/asa-server/api-logs"
+    binaries: "/run/desktop/mnt/host/m/docker/asa-server/server-files"  # Shared ARK server binaries
+    instance: "/run/desktop/mnt/host/m/docker/asa-server/instance"      # Instance-specific data
   
   # PVC settings (only used when type: "pvc")
-  # Server files volume
-  serverFiles:
-    size: 50Gi
+  # Shared server binaries volume
+  binaries:
+    size: 60Gi
     storageClass: ""
     accessModes:
       - ReadWriteOnce
   
-  # Saved games and config
-  saved:
-    size: 5Gi
-    storageClass: ""
-    accessModes:
-      - ReadWriteOnce
-  
-  # Cluster data (if using clusters)
-  cluster:
-    size: 1Gi
-    storageClass: ""
-    accessModes:
-      - ReadWriteOnce
-  
-  # API logs (only if API enabled)
-  apiLogs:
-    size: 1Gi
+  # Instance-specific data (configs, saves, logs)
+  instance:
+    size: 10Gi
     storageClass: ""
     accessModes:
       - ReadWriteOnce
@@ -127,9 +86,7 @@ persistence:
 # Service configuration
 service:
   type: ClusterIP
-  # For local development, you might want to use NodePort or hostPort
-  gamePort: 7777
-  rconPort: 27020
+  # Note: Ports are now defined in server.ports section
 
 # Use hostPort for local development (Docker Desktop)
 hostPort:

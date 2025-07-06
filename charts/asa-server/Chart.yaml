@@ -1,16 +1,17 @@
 apiVersion: v2
 name: asa-server
-description: A Helm chart for ARK Survival Ascended Server using acekorneya/asa_server
+description: A Helm chart for ARK Survival Ascended Server using Zerschranzer/Linux-ASA-Server-Manager
 type: application
-version: 1.0.0
-appVersion: "2_1_latest"
+version: 2.0.0
+appVersion: "latest"
 keywords:
   - game-server
   - ark
   - survival
   - ascended
+  - zerschranzer
+  - proton
 maintainers:
-  - name: fleet-infra
-    url: https://github.com/acekorneya/asa_server
+  - name: Patrick Magee
 sources:
-  - https://github.com/Acekorneya/Ark-Survival-Ascended-Server
+  - https://github.com/Zerschranzer/Linux-ASA-Server-Manager

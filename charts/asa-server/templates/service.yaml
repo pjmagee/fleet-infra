@@ -7,15 +7,19 @@ metadata:
 spec:
   type: {{ .Values.service.type }}
   ports:
-    - port: {{ .Values.service.gamePort }}
+    - port: {{ .Values.server.ports.game }}
       targetPort: game-tcp
       protocol: TCP
       name: game-tcp
-    - port: {{ .Values.service.gamePort }}
+    - port: {{ .Values.server.ports.game }}
       targetPort: game-udp
       protocol: UDP
       name: game-udp
-    - port: {{ .Values.service.rconPort }}
+    - port: {{ .Values.server.ports.query }}
+      targetPort: query-udp
+      protocol: UDP
+      name: query-udp
+    - port: {{ .Values.server.ports.rcon }}
       targetPort: rcon
       protocol: TCP
       name: rcon
