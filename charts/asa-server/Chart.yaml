@@ -1,0 +1,16 @@
+apiVersion: v2
+name: asa-server
+description: A Helm chart for ARK Survival Ascended Server using acekorneya/asa_server
+type: application
+version: 0.1.0
+appVersion: "2_1_latest"
+keywords:
+  - game-server
+  - ark
+  - survival
+  - ascended
+maintainers:
+  - name: fleet-infra
+    url: https://github.com/acekorneya/asa_server
+sources:
+  - https://github.com/Acekorneya/Ark-Survival-Ascended-Server

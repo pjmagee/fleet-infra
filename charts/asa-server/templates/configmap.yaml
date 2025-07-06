@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "asa-server.fullname" . }}-config
+  labels:
+    {{- include "asa-server.labels" . | nindent 4 }}
+data:
+  # Server configuration
+  server-name: {{ .Values.server.sessionName | quote }}
+  map-name: {{ .Values.server.mapName | quote }}
+  max-players: {{ .Values.server.maxPlayers | quote }}
+  
+  {{- if .Values.server.modIds }}
+  mod-ids: {{ .Values.server.modIds | quote }}
+  {{- end }}
+  
+  {{- if .Values.server.passiveMods }}
+  passive-mods: {{ .Values.server.passiveMods | quote }}
+  {{- end }}
+  
+  {{- if .Values.server.clusterId }}
+  cluster-id: {{ .Values.server.clusterId | quote }}
+  {{- end }}
+  
+  # Performance settings
+  cpu-optimization: {{ .Values.performance.cpuOptimization | quote }}
+  
+  # Update settings
+  update-interval: {{ .Values.updates.interval | quote }}
+  restart-notice-minutes: {{ .Values.updates.restartNoticeMinutes | quote }}

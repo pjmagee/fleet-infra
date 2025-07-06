@@ -10,4 +10,4 @@ resources:
   - ../base/changedetection
   - ../base/budge
   - ../base/stremio
-  - ../base/ark
+  - ../base/asa-server

@@ -1,0 +1,85 @@
+{{- if and .Values.persistence.enabled (eq .Values.persistence.type "pvc") }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "asa-server.fullname" . }}-server-files
+  labels:
+    {{- include "asa-server.labels" . | nindent 4 }}
+    component: server-files
+spec:
+  accessModes:
+    {{- range .Values.persistence.serverFiles.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.serverFiles.size | quote }}
+  {{- if .Values.persistence.serverFiles.storageClass }}
+  storageClassName: {{ .Values.persistence.serverFiles.storageClass | quote }}
+  {{- end }}
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "asa-server.fullname" . }}-saved-data
+  labels:
+    {{- include "asa-server.labels" . | nindent 4 }}
+    component: saved-data
+spec:
+  accessModes:
+    {{- range .Values.persistence.saved.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.saved.size | quote }}
+  {{- if .Values.persistence.saved.storageClass }}
+  storageClassName: {{ .Values.persistence.saved.storageClass | quote }}
+  {{- end }}
+
+{{- if .Values.server.clusterId }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "asa-server.fullname" . }}-cluster-data
+  labels:
+    {{- include "asa-server.labels" . | nindent 4 }}
+    component: cluster-data
+spec:
+  accessModes:
+    {{- range .Values.persistence.cluster.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.cluster.size | quote }}
+  {{- if .Values.persistence.cluster.storageClass }}
+  storageClassName: {{ .Values.persistence.cluster.storageClass | quote }}
+  {{- end }}
+{{- end }}
+
+{{- if .Values.api.enabled }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "asa-server.fullname" . }}-api-logs
+  labels:
+    {{- include "asa-server.labels" . | nindent 4 }}
+    component: api-logs
+spec:
+  accessModes:
+    {{- range .Values.persistence.apiLogs.accessModes }}
+    - {{ . | quote }}
+    {{- end }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.apiLogs.size | quote }}
+  {{- if .Values.persistence.apiLogs.storageClass }}
+  storageClassName: {{ .Values.persistence.apiLogs.storageClass | quote }}
+  {{- end }}
+{{- end }}
+{{- end }}

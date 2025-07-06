@@ -1,0 +1,293 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "asa-server.fullname" . }}
+  labels:
+    {{- include "asa-server.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "asa-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "asa-server.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.serviceAccount.name }}
+      serviceAccountName: {{ . }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: game-tcp
+              containerPort: {{ .Values.server.ports.game }}
+              protocol: TCP
+              {{- if .Values.hostPort.enabled }}
+              hostPort: {{ .Values.server.ports.game }}
+              {{- end }}
+            - name: game-udp
+              containerPort: {{ .Values.server.ports.game }}
+              protocol: UDP
+              {{- if .Values.hostPort.enabled }}
+              hostPort: {{ .Values.server.ports.game }}
+              {{- end }}
+            - name: rcon
+              containerPort: {{ .Values.server.ports.rcon }}
+              protocol: TCP
+              {{- if .Values.hostPort.enabled }}
+              hostPort: {{ .Values.server.ports.rcon }}
+              {{- end }}
+          env:
+            # Instance configuration
+            - name: INSTANCE_NAME
+              value: {{ .Values.instance.name | quote }}
+            - name: TZ
+              value: {{ .Values.instance.timezone | quote }}
+            
+            # Server settings
+            - name: MAP_NAME
+              value: {{ .Values.server.mapName | quote }}
+            - name: SESSION_NAME
+              value: {{ .Values.server.sessionName | quote }}
+            - name: SERVER_PASSWORD
+              {{- if .Values.onePassword.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "asa-server.fullname" . }}-secret
+                  key: {{ .Values.onePassword.serverPasswordKey }}
+              {{- else }}
+              value: {{ .Values.server.password | quote }}
+              {{- end }}
+            - name: SERVER_ADMIN_PASSWORD
+              {{- if .Values.onePassword.enabled }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "asa-server.fullname" . }}-secret
+                  key: {{ .Values.onePassword.adminPasswordKey }}
+              {{- else }}
+              value: {{ .Values.server.adminPassword | quote }}
+              {{- end }}
+            - name: MAX_PLAYERS
+              value: {{ .Values.server.maxPlayers | quote }}
+            - name: ASA_PORT
+              value: {{ .Values.server.ports.game | quote }}
+            - name: RCON_PORT
+              value: {{ .Values.server.ports.rcon | quote }}
+            
+            # Game configuration
+            - name: BATTLEEYE
+              value: {{ .Values.server.battleye | upper | quote }}
+            - name: RCON_ENABLED
+              value: {{ .Values.server.rconEnabled | upper | quote }}
+            
+            # API configuration
+            - name: API
+              value: {{ .Values.api.enabled | upper | quote }}
+            
+            # Performance settings
+            - name: CPU_OPTIMIZATION
+              value: {{ .Values.performance.cpuOptimization | upper | quote }}
+            - name: RANDOM_STARTUP_DELAY
+              value: {{ .Values.performance.randomStartupDelay | upper | quote }}
+            - name: DISPLAY_POK_MONITOR_MESSAGE
+              value: {{ .Values.performance.displayMonitorMessage | upper | quote }}
+            
+            # Update settings
+            - name: UPDATE_SERVER
+              value: {{ .Values.updates.enabled | upper | quote }}
+            - name: CHECK_FOR_UPDATE_INTERVAL
+              value: {{ .Values.updates.interval | quote }}
+            - name: UPDATE_WINDOW_MINIMUM_TIME
+              value: {{ .Values.updates.windowStart | quote }}
+            - name: UPDATE_WINDOW_MAXIMUM_TIME
+              value: {{ .Values.updates.windowEnd | quote }}
+            - name: RESTART_NOTICE_MINUTES
+              value: {{ .Values.updates.restartNoticeMinutes | quote }}
+            
+            # MOTD settings
+            - name: ENABLE_MOTD
+              value: {{ .Values.server.motd.enabled | upper | quote }}
+            {{- if .Values.server.motd.enabled }}
+            - name: MOTD
+              value: {{ .Values.server.motd.message | quote }}
+            - name: MOTD_DURATION
+              value: {{ .Values.server.motd.duration | quote }}
+            {{- end }}
+            
+            # Optional settings
+            {{- if .Values.server.showAdminCommandsInChat }}
+            - name: SHOW_ADMIN_COMMANDS_IN_CHAT
+              value: {{ .Values.server.showAdminCommandsInChat | upper | quote }}
+            {{- end }}
+            {{- if .Values.server.clusterId }}
+            - name: CLUSTER_ID
+              value: {{ .Values.server.clusterId | quote }}
+            {{- end }}
+            {{- if .Values.server.modIds }}
+            - name: MOD_IDS
+              value: {{ .Values.server.modIds | quote }}
+            {{- end }}
+            {{- if .Values.server.passiveMods }}
+            - name: PASSIVE_MODS
+              value: {{ .Values.server.passiveMods | quote }}
+            {{- end }}
+            {{- if .Values.server.customArgs }}
+            - name: CUSTOM_SERVER_ARGS
+              value: {{ .Values.server.customArgs | quote }}
+            {{- end }}
+            
+            # Extra environment variables
+            {{- range .Values.extraEnvVars }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          
+          {{- if .Values.probes.startup.enabled }}
+          startupProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  # Check if server process is running
+                  pgrep -f "ArkAscendedServer.exe\|AsaApiLoader.exe" > /dev/null
+            initialDelaySeconds: {{ .Values.probes.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.startup.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+            successThreshold: {{ .Values.probes.startup.successThreshold }}
+          {{- end }}
+          
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  # Check if server process is running
+                  pgrep -f "ArkAscendedServer.exe\|AsaApiLoader.exe" > /dev/null
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+            successThreshold: {{ .Values.probes.liveness.successThreshold }}
+          {{- end }}
+          
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  # Check if server is listening on the game port
+                  netstat -ln | grep -q ":{{ .Values.server.ports.game }} "
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+            successThreshold: {{ .Values.probes.readiness.successThreshold }}
+          {{- end }}
+          
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          
+          volumeMounts:
+            # Server files
+            - name: server-files
+              mountPath: /home/pok/arkserver
+            # Saved games and config
+            - name: saved-data
+              mountPath: /home/pok/arkserver/ShooterGame/Saved
+            {{- if .Values.server.clusterId }}
+            # Cluster data
+            - name: cluster-data
+              mountPath: /home/pok/arkserver/ShooterGame/Saved/clusters
+            {{- end }}
+            {{- if .Values.api.enabled }}
+            # API logs
+            - name: api-logs
+              mountPath: /home/pok/arkserver/ShooterGame/Binaries/Win64/logs
+            {{- end }}
+      
+      volumes:
+        # Server files volume
+        - name: server-files
+          {{- if and .Values.persistence.enabled (eq .Values.persistence.type "hostPath") }}
+          hostPath:
+            path: {{ .Values.persistence.hostPaths.serverFiles }}
+            type: DirectoryOrCreate
+          {{- else if and .Values.persistence.enabled (eq .Values.persistence.type "pvc") }}
+          persistentVolumeClaim:
+            claimName: {{ include "asa-server.fullname" . }}-server-files
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        # Saved data volume
+        - name: saved-data
+          {{- if and .Values.persistence.enabled (eq .Values.persistence.type "hostPath") }}
+          hostPath:
+            path: {{ .Values.persistence.hostPaths.saved }}
+            type: DirectoryOrCreate
+          {{- else if and .Values.persistence.enabled (eq .Values.persistence.type "pvc") }}
+          persistentVolumeClaim:
+            claimName: {{ include "asa-server.fullname" . }}-saved-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- if .Values.server.clusterId }}
+        # Cluster data volume
+        - name: cluster-data
+          {{- if and .Values.persistence.enabled (eq .Values.persistence.type "hostPath") }}
+          hostPath:
+            path: {{ .Values.persistence.hostPaths.cluster }}
+            type: DirectoryOrCreate
+          {{- else if and .Values.persistence.enabled (eq .Values.persistence.type "pvc") }}
+          persistentVolumeClaim:
+            claimName: {{ include "asa-server.fullname" . }}-cluster-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.api.enabled }}
+        # API logs volume
+        - name: api-logs
+          {{- if and .Values.persistence.enabled (eq .Values.persistence.type "hostPath") }}
+          hostPath:
+            path: {{ .Values.persistence.hostPaths.apiLogs }}
+            type: DirectoryOrCreate
+          {{- else if and .Values.persistence.enabled (eq .Values.persistence.type "pvc") }}
+          persistentVolumeClaim:
+            claimName: {{ include "asa-server.fullname" . }}-api-logs
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+      
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
