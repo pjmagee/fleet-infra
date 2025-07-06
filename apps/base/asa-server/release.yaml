@@ -17,7 +17,7 @@ spec:
     # ASA Server Configuration
     instance:
       name: "ragnarok-asa"
-      timezone: "America/New_York"
+      timezone: "Europe/London"
     
     # Server Settings - private server for friends
     server:

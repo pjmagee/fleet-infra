@@ -19,6 +19,7 @@ This deployment replaces the previous ARK: Survival Evolved setup with a modern 
 The server is configured in `release.yaml` with the following key settings:
 
 ### Server Details
+
 - **Map**: Ragnarok_WP (Norse-themed map with ruins, longhouses, and hot springs)
 - **Session Name**: "Ragnarok Adventures"
 - **Max Players**: 4 (suitable for local development)
@@ -26,11 +27,13 @@ The server is configured in `release.yaml` with the following key settings:
 - **Ports**: 7777 (game), 27020 (RCON)
 
 ### Performance Optimizations
+
 - **CPU Optimization**: Enabled for Docker Desktop
 - **Memory**: 8Gi request, 12Gi limit
 - **Storage**: 60Gi for server files, 8Gi for saves
 
 ### Mods Included
+
 - **731604991**: Structures Plus (S+) - Enhanced building
 - **889745138**: Awesome SpyGlass! - Advanced creature information
 
@@ -45,16 +48,19 @@ The deployment creates several persistent volumes:
 ## Access
 
 ### Game Connection
+
 - **Host**: `localhost` (or Docker Desktop VM IP)
 - **Port**: `7777`
 - **In-game**: Add server using IP `127.0.0.1:7777`
 
 ### RCON Management
+
 - **Host**: `localhost`
 - **Port**: `27020`
 - **Password**: `arkadmin123`
 
 Example RCON commands:
+
 ```bash
 # Install RCON client
 brew install rcon  # macOS
@@ -73,6 +79,7 @@ SetPlayerPos 0 0 0    # Teleport admin to coordinates
 ## Deployment Status
 
 Check deployment status:
+
 ```bash
 # Check if pods are running
 kubectl get pods -n asa-server
@@ -90,22 +97,26 @@ kubectl get svc -n asa-server
 ## Troubleshooting
 
 ### Server Not Starting
+
 1. **Check logs**: `kubectl logs -n asa-server -l app.kubernetes.io/name=asa-server`
 2. **Verify resources**: Ensure enough CPU/memory available
 3. **Storage issues**: Check if PVCs are bound: `kubectl get pvc -n asa-server`
 4. **Image pull**: Verify Docker image can be pulled
 
 ### Connection Issues
+
 1. **Port forwarding**: `kubectl port-forward -n asa-server svc/asa-server 7777:7777`
 2. **Check service**: `kubectl get svc -n asa-server asa-server`
 3. **Host network**: Verify hostPort is working in Docker Desktop
 
 ### Performance Issues
+
 1. **Resource monitoring**: `kubectl top pods -n asa-server`
 2. **Increase limits** in `release.yaml` if needed
 3. **Check Docker Desktop resource allocation**
 
 ### First-Time Setup Issues
+
 - **Initial download**: Server files (40-50GB) download on first start
 - **Startup time**: Can take 5-10 minutes for first launch
 - **Mod downloads**: Additional time if mods are enabled
@@ -113,21 +124,26 @@ kubectl get svc -n asa-server
 ## Maintenance
 
 ### Server Updates
+
 The server automatically checks for updates weekly between 2-4 AM with 15-minute player warnings.
 
 ### Manual Update
+
 ```bash
 # Restart the pod to trigger update check
 kubectl rollout restart deployment -n asa-server asa-server
 ```
 
 ### Configuration Changes
+
 1. Edit `release.yaml`
 2. Commit and push changes
 3. FluxCD will automatically apply updates
 
 ### Mod Management
+
 To add/remove mods:
+
 1. Update `server.modIds` in `release.yaml`
 2. Restart the deployment
 3. Server will download new mods on startup
@@ -137,17 +153,20 @@ To add/remove mods:
 This deployment completely replaces the previous ARK: Survival Evolved setup:
 
 ### What Changed
+
 - **Game Version**: ARK SE → ARK: Survival Ascended
 - **Docker Image**: `steamcmd/steamcmd` → `acekorneya/asa_server`
 - **Helm Chart**: External SickHub chart → Custom local chart
 - **Architecture**: Wine/Proton compatibility layer for Windows server
 
 ### Data Migration
+
 - **No automatic migration** - ASA saves are incompatible with SE
 - **Fresh start required** - New characters and world
 - **Configuration preserved** - Server settings and mod preferences
 
 ### Removed Components
+
 - ARK SE HelmRepository (SickHub)
 - ARK SE namespace and resources
 - Legacy ARK SE configuration files
@@ -165,6 +184,7 @@ Potential improvements for this deployment:
 ## Support
 
 For issues with:
+
 - **Helm Chart**: Check this repository's issues
 - **ASA Server Image**: See [acekorneya/asa_server](https://github.com/Acekorneya/Ark-Survival-Ascended-Server)
 - **Game Issues**: ARK: Survival Ascended official support
