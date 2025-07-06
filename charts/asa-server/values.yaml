@@ -22,7 +22,7 @@ server:
   # Map settings
   mapName: "TheIsland_WP"  # TheIsland_WP, ScorchedEarth_WP, TheCenter_WP, Aberration_WP, Extinction_WP, Ragnarok_WP (ASA format)
   sessionName: "My ASA Server"
-  password: ""  # Server password (leave empty for no password)
+  password: ""  # Server password (leave empty for no password - ONLY NUMBERS AND CHARACTERS ALLOWED)
   adminPassword: "arkadmin123"
   maxPlayers: 70
   
@@ -45,7 +45,7 @@ server:
   showAdminCommandsInChat: false
   
   # Cluster settings
-  clusterId: ""
+  clusterId: "cluster"
   
   # Mods
   modIds: ""
