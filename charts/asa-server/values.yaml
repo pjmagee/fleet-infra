@@ -47,14 +47,14 @@ server:
 # Performance and Monitoring - handled by the base image
 # Update settings - handled by the base image
 
-# Resource limits
+# Resource limits - Following Zerschranzer documentation minimum requirements
 resources:
   limits:
+    cpu: 4
+    memory: 32Gi
+  requests:
     cpu: 2
     memory: 16Gi
-  requests:
-    cpu: 1
-    memory: 8Gi
 
 # Persistence (Zerschranzer architecture)
 persistence:

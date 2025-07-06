@@ -58,13 +58,16 @@ spec:
               mountPath: /ark/binaries
             - name: ark-instance
               mountPath: /ark/instance
+          env:
+            - name: UMASK
+              value: "0007"
           resources:
             requests:
-              memory: "1Gi"
-              cpu: "500m"
-            limits:
               memory: "2Gi"
               cpu: "1"
+            limits:
+              memory: "4Gi"
+              cpu: "2"
         # Create required directory structure for ARK server
         - name: setup-directories
           image: busybox:1.35
@@ -89,40 +92,35 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          # Zerschranzer entrypoint command and args
+          # Zerschranzer entrypoint command and args - exact format from ark_docker_manager.sh
           command: ["/entrypoint.sh"]
           args: 
             - "run"
-            # ARK server map and session settings (single argument)
-            - >-
-              {{ .Values.server.mapName }}?listen
-              ?SessionName={{ .Values.server.serverName | replace " " "%20" }}
-              {{- if .Values.server.serverPassword }}?ServerPassword={{ .Values.server.serverPassword }}{{- end }}
-              ?ServerAdminPassword={{ .Values.server.serverAdminPassword }}
-              ?AltSaveDirectoryName={{ .Values.server.saveDir }}
-              ?RCONEnabled=True
-              ?Port={{ .Values.server.ports.game }}
-              ?QueryPort={{ .Values.server.ports.query }}
-              ?RCONPort={{ .Values.server.ports.rcon }}
-              ?MaxPlayers={{ .Values.server.maxPlayers }}
-              {{- if .Values.server.clusterID }}?ClusterDirOverride=/ark/cluster?ClusterId={{ .Values.server.clusterID }}{{- end }}
-            # Additional server flags
+            # First argument: Map and session parameters in URL format (Zerschranzer format)
+            - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }} ?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
+            # Custom start parameters from instance config
             {{- if .Values.server.customStartParameters }}
             {{- range (split " " .Values.server.customStartParameters) }}
             {{- if . }}
             - {{ . | quote }}
             {{- end }}
             {{- end }}
-            {{- else }}
-            - "-NoBattlEye"
-            - "-crossplay"  
-            - "-NoHangDetection"
             {{- end }}
-            {{- if .Values.server.modIDs }}
-            - "-mods={{ .Values.server.modIDs }}"
+            # Server configuration flags
+            - "-WinLiveMaxPlayers={{ .Values.server.maxPlayers }}"
+            - "-Port={{ .Values.server.ports.game }}"
+            - "-QueryPort={{ .Values.server.ports.query }}"
+            - "-RCONPort={{ .Values.server.ports.rcon }}"
+            - "-game"
+            {{- if .Values.server.clusterID }}
+            - "-ClusterDirOverride=/ark/cluster"
+            - "-ClusterId={{ .Values.server.clusterID }}"
             {{- end }}
             - "-server"
             - "-log"
+            {{- if .Values.server.modIDs }}
+            - "-mods={{ .Values.server.modIDs }}"
+            {{- end }}
           ports:
             - name: game-tcp
               containerPort: {{ .Values.server.ports.game }}
@@ -214,13 +212,13 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           
           volumeMounts:
-            # ARK server binaries volume (shared)
+            # ARK server binaries volume
             - name: ark-binaries
               mountPath: /ark/binaries
-            # Instance-specific data (configs, saves, logs)
+            # Instance-specific data
             - name: ark-instance
               mountPath: /ark/instance
-            # Configuration files from ConfigMap
+            # Configuration files - mounted to the instance directory (Zerschranzer pattern)
             - name: config
               mountPath: /ark/instance/Game.ini
               subPath: Game.ini
