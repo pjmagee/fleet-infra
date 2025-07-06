@@ -90,25 +90,25 @@ spec:
             
             # Game configuration
             - name: BATTLEEYE
-              value: {{ .Values.server.battleye | upper | quote }}
+              value: {{ .Values.server.battleye | toString | upper | quote }}
             - name: RCON_ENABLED
-              value: {{ .Values.server.rconEnabled | upper | quote }}
+              value: {{ .Values.server.rconEnabled | toString | upper | quote }}
             
             # API configuration
             - name: API
-              value: {{ .Values.api.enabled | upper | quote }}
+              value: {{ .Values.api.enabled | toString | upper | quote }}
             
             # Performance settings
             - name: CPU_OPTIMIZATION
-              value: {{ .Values.performance.cpuOptimization | upper | quote }}
+              value: {{ .Values.performance.cpuOptimization | toString | upper | quote }}
             - name: RANDOM_STARTUP_DELAY
-              value: {{ .Values.performance.randomStartupDelay | upper | quote }}
+              value: {{ .Values.performance.randomStartupDelay | toString | upper | quote }}
             - name: DISPLAY_POK_MONITOR_MESSAGE
-              value: {{ .Values.performance.displayMonitorMessage | upper | quote }}
+              value: {{ .Values.performance.displayMonitorMessage | toString | upper | quote }}
             
             # Update settings
             - name: UPDATE_SERVER
-              value: {{ .Values.updates.enabled | upper | quote }}
+              value: {{ .Values.updates.enabled | toString | upper | quote }}
             - name: CHECK_FOR_UPDATE_INTERVAL
               value: {{ .Values.updates.interval | quote }}
             - name: UPDATE_WINDOW_MINIMUM_TIME
@@ -120,7 +120,7 @@ spec:
             
             # MOTD settings
             - name: ENABLE_MOTD
-              value: {{ .Values.server.motd.enabled | upper | quote }}
+              value: {{ .Values.server.motd.enabled | toString | upper | quote }}
             {{- if .Values.server.motd.enabled }}
             - name: MOTD
               value: {{ .Values.server.motd.message | quote }}
@@ -131,7 +131,7 @@ spec:
             # Optional settings
             {{- if .Values.server.showAdminCommandsInChat }}
             - name: SHOW_ADMIN_COMMANDS_IN_CHAT
-              value: {{ .Values.server.showAdminCommandsInChat | upper | quote }}
+              value: {{ .Values.server.showAdminCommandsInChat | toString | upper | quote }}
             {{- end }}
             {{- if .Values.server.clusterId }}
             - name: CLUSTER_ID
