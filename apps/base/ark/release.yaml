@@ -12,7 +12,7 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: ark
-        namespace: ark
+        namespace: flux-system
   values:
     # Default settings for local development
     clusterName: docker-desktop-ark
