@@ -51,6 +51,8 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["/entrypoint.sh"]
           args: ["update"]
+          securityContext:
+            runAsUser: 0  # Run as root to fix steamcmd permissions
           volumeMounts:
             - name: ark-binaries
               mountPath: /ark/binaries
