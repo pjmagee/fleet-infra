@@ -96,10 +96,6 @@ spec:
           command: ["/entrypoint.sh"]
           args: 
             - "run"
-            # First argument: Map and session parameters ONLY (matching Zerschranzer format exactly)
-            - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }} ?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
-          args: 
-            - "run"
             # Map and session parameters (exact Zerschranzer format - first argument only)  
             - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }} ?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
             # Custom start parameters (parsed from space-separated string)
