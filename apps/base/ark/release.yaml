@@ -47,7 +47,6 @@ spec:
       # Game files (largest volume - ARK installation + mods)
       game:
         size: 50Gi
-        storageClass: ""  # Use default storage class
         accessModes:
           - ReadWriteOnce
         mountPath: /arkserver
@@ -55,7 +54,6 @@ spec:
       # Cluster shared files
       cluster:
         size: 1Gi
-        storageClass: ""
         accessModes:
           - ReadWriteOnce
         mountPath: /arkserver/ShooterGame/Saved/clusters
@@ -63,7 +61,6 @@ spec:
       # Server save files
       save:
         size: 5Gi
-        storageClass: ""
         accessModes:
           - ReadWriteOnce
         mountPath: /arkserver/ShooterGame/Saved
