@@ -96,9 +96,9 @@ spec:
           command: ["/entrypoint.sh"]
           args: 
             - "run"
-            # First argument: Map and session parameters in URL format (Zerschranzer format)
+            # First argument: Map and session parameters in URL format (exact Zerschranzer format)
             - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }} ?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
-            # Custom start parameters from instance config
+            # Custom start parameters (space-separated flags from instance config)
             {{- if .Values.server.customStartParameters }}
             {{- range (split " " .Values.server.customStartParameters) }}
             {{- if . }}
@@ -106,7 +106,7 @@ spec:
             {{- end }}
             {{- end }}
             {{- end }}
-            # Server configuration flags
+            # Server configuration flags (individual arguments)
             - "-WinLiveMaxPlayers={{ .Values.server.maxPlayers }}"
             - "-Port={{ .Values.server.ports.game }}"
             - "-QueryPort={{ .Values.server.ports.query }}"
