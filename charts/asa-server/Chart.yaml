@@ -2,7 +2,7 @@ apiVersion: v2
 name: asa-server
 description: A Helm chart for ARK Survival Ascended Server using acekorneya/asa_server
 type: application
-version: 0.1.0
+version: 1.0.0
 appVersion: "2_1_latest"
 keywords:
   - game-server
