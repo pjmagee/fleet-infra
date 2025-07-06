@@ -26,6 +26,25 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      # Init container to download ARK server binaries
+      initContainers:
+        - name: ark-updater
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/entrypoint.sh"]
+          args: ["update"]
+          volumeMounts:
+            - name: ark-binaries
+              mountPath: /ark/binaries
+            - name: ark-instance
+              mountPath: /ark/instance
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+            limits:
+              memory: "2Gi"
+              cpu: "1"
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
