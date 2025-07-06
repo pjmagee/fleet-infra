@@ -65,6 +65,24 @@ spec:
             limits:
               memory: "2Gi"
               cpu: "1"
+        # Create required directory structure for ARK server
+        - name: setup-directories
+          image: busybox:1.35
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Creating required ARK directory structure..."
+              mkdir -p /ark/binaries/ShooterGame/Saved/Config/WindowsServer
+              mkdir -p /ark/binaries/ShooterGame/Saved/SavedArks
+              mkdir -p /ark/binaries/ShooterGame/Saved/Logs
+              chown -R 7777:7777 /ark/binaries/ShooterGame/Saved
+              chmod -R 755 /ark/binaries/ShooterGame/Saved
+              echo "Directory structure created successfully"
+          volumeMounts:
+            - name: ark-binaries
+              mountPath: /ark/binaries
+          securityContext:
+            runAsUser: 0  # Run as root to create directories
       containers:
         - name: {{ .Chart.Name }}
           securityContext:

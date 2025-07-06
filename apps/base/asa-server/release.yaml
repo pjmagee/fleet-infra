@@ -58,7 +58,7 @@ spec:
       # Use hostPath for Docker Desktop development
       type: "hostPath"
       
-      # Host paths - updated for Zerschranzer volume structure
+      # Host paths - Docker Desktop format
       hostPaths:
         binaries: "/run/desktop/mnt/host/m/docker/asa-server/server-files"  # Shared ARK binaries
         instance: "/run/desktop/mnt/host/m/docker/asa-server/instance"      # Instance data
