@@ -26,8 +26,26 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      # Init container to download ARK server binaries
+      # Init containers to prepare the environment
       initContainers:
+        # Fix permissions for ARK directories
+        - name: fix-permissions
+          image: busybox:1.35
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Setting permissions for ARK directories..."
+              chown -R 7777:7777 /ark/binaries /ark/instance
+              chmod -R 755 /ark/binaries /ark/instance
+              echo "Permissions set successfully"
+          volumeMounts:
+            - name: ark-binaries
+              mountPath: /ark/binaries
+            - name: ark-instance
+              mountPath: /ark/instance
+          securityContext:
+            runAsUser: 0  # Run as root to change ownership
+        # Download ARK server binaries
         - name: ark-updater
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
