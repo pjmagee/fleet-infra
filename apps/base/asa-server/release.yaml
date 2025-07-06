@@ -55,7 +55,7 @@ spec:
     persistence:
       enabled: true
       
-      # Use hostPath for direct control over storage location
+      # Use hostPath for Docker Desktop development
       type: "hostPath"
       
       # Host paths - updated for Zerschranzer volume structure
