@@ -1,0 +1,156 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ark-cluster
+  namespace: ark
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: ark-cluster
+      version: ">=0.1.0"
+      sourceRef:
+        kind: HelmRepository
+        name: ark
+        namespace: ark
+  values:
+    # Default settings for local development
+    clusterName: docker-desktop-ark
+    
+    # Use hostPort for local development (no LoadBalancer needed)
+    hostPort: true
+    hostNetwork: false
+    
+    # Global RCON password for cluster management
+    rcon:
+      password: "arkadmin123"
+    
+    # Global mods enabled for all servers (popular ones)
+    mods:
+      - "731604991"  # Structures Plus (S+)
+      - "889745138"  # Awesome SpyGlass!
+      - "893904615"  # Stack Mods (StackMeMore)
+    
+    # Resource limits for local development
+    resources:
+      limits:
+        cpu: 2
+        memory: 8Gi
+      requests:
+        cpu: 1
+        memory: 4Gi
+    
+    # Enable persistence for game data
+    persistence:
+      enabled: true
+      
+      # Game files (largest volume - ARK installation + mods)
+      game:
+        size: 50Gi
+        storageClass: ""  # Use default storage class
+        accessModes:
+          - ReadWriteOnce
+        mountPath: /arkserver
+      
+      # Cluster shared files
+      cluster:
+        size: 1Gi
+        storageClass: ""
+        accessModes:
+          - ReadWriteOnce
+        mountPath: /arkserver/ShooterGame/Saved/clusters
+      
+      # Server save files
+      save:
+        size: 5Gi
+        storageClass: ""
+        accessModes:
+          - ReadWriteOnce
+        mountPath: /arkserver/ShooterGame/Saved
+    
+    # ARK servers in the cluster
+    servers:
+      # Primary server - Ragnarok
+      ragnarok:
+        updateOnStart: true  # Enable for initial setup and updates
+        sessionName: "DDArk - Ragnarok"
+        message: "Welcome to Ragnarok!"
+        map: Ragnarok
+        password: ""  # No password for local dev
+        maxPlayers: 4
+        xpMultiplier: 3  # Faster progression for testing
+        
+        # Ports for Ragnarok server
+        ports:
+          gameudp: 7777
+          queryudp: 27015
+          rcon: 32330
+        
+        # Start with 1 replica (active by default)
+        replicaCount: 1
+        
+        # Custom server settings
+        customConfigMap:
+          GameUserSettingsIni: |
+            [/Script/ShooterGame.ShooterGameUserSettings]
+            Version=5
+            [ServerSettings]
+            AllowFlyerCarryPvE=True
+            AllowThirdPersonPlayer=True
+            AutoSavePeriodMinutes=15.000000
+            XPMultiplier=3
+            TamingSpeedMultiplier=3.0
+            HarvestAmountMultiplier=2.0
+            ResourcesRespawnPeriodMultiplier=0.5
+            DayTimeSpeedScale=0.5
+            NightTimeSpeedScale=2.0
+            DifficultyOffset=1.0
+            MaxDifficulty=True
+            
+          GameIni: |
+            [/Script/ShooterGame.ShooterGameMode]
+            bDisableStructurePlacementCollision=True
+            bAllowFlyerCarryPvE=True
+            MatingIntervalMultiplier=0.5
+            BabyMatureSpeedMultiplier=5.0
+            EggHatchSpeedMultiplier=5.0
+            BabyCuddleIntervalMultiplier=0.2
+        
+        # Resource allocation for primary server
+        resources:
+          requests:
+            cpu: 1.5
+            memory: 6Gi
+          limits:
+            cpu: 2
+            memory: 8Gi
+    
+    # Global environment variables
+    extraEnvVars:
+      - name: am_arkwarnminutes
+        value: "15"  # Warn players 15 minutes before restart
+      - name: ARKSERVER_SHARED
+        value: "/arkserver"  # Shared server files location
+    
+    # Security context for containers
+    securityContext:
+      runAsUser: 1000
+      fsGroup: 1000
+    
+    # Service account
+    serviceAccount:
+      create: true
+      name: "ark-cluster"
+    
+    # Startup and liveness probes (ARK takes time to start)
+    startupProbe:
+      initialDelaySeconds: 180  # ARK needs time to initialize
+      failureThreshold: 60
+      periodSeconds: 10
+      timeoutSeconds: 5
+    
+    livenessProbe:
+      initialDelaySeconds: 30
+      failureThreshold: 5
+      periodSeconds: 15
+      timeoutSeconds: 5

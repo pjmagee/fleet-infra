@@ -20,6 +20,7 @@ This error indicates that the 1Password credentials file is not properly formatt
 ```
 
 This script will:
+
 - Create the required secrets (`op-credentials` and `op-operator-token`)
 - Automatically reconcile your existing Helm release to use the new secrets
 - Verify the deployment status
@@ -68,17 +69,22 @@ kubectl create secret generic op-operator-token --namespace 1password \
 
 1. **Re-download** the credentials file from 1Password.com
 2. **Check file encoding**:
+
    ```powershell
    # Ensure UTF-8 encoding
    Get-Content "1password-credentials.json" -Raw | Out-File -Encoding UTF8 "1password-credentials-fixed.json"
    ```
+
 3. **Validate JSON**:
+
    ```powershell
    # Test if file is valid JSON
    try { Get-Content "1password-credentials.json" | ConvertFrom-Json; Write-Host "✅ Valid JSON" } 
    catch { Write-Host "❌ Invalid JSON: $_" }
    ```
+
 4. **Check for hidden characters**:
+
    ```powershell
    # Remove potential BOM or hidden characters
    (Get-Content "1password-credentials.json" -Raw).Trim() | Out-File -Encoding UTF8 -NoNewline "1password-credentials-clean.json"
@@ -87,6 +93,7 @@ kubectl create secret generic op-operator-token --namespace 1password \
 ### Issue: Connect server not responding
 
 **Solutions**:
+
 1. Verify the Connect token is correct
 2. Check if 1Password Connect is properly deployed
 3. Ensure network connectivity to 1Password services

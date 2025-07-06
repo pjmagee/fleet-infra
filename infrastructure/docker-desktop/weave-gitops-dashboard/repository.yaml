@@ -11,6 +11,6 @@ metadata:
   name: ww-gitops
   namespace: flux-system
 spec:
-  interval: 1h0m0s
+  interval: 24h
   type: oci
   url: oci://ghcr.io/weaveworks/charts
