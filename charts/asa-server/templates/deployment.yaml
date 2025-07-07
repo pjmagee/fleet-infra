@@ -106,39 +106,35 @@ spec:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          # Zerschranzer entrypoint command and args - corrected per ARK wiki documentation
-          command: ["/entrypoint.sh"]
+          # Zerschranzer entrypoint command and args - use shell for environment variable expansion
+          command: ["/bin/bash"]
           args: 
-            - "run"
-            # Map name with query parameters concatenated (ARK wiki format)
-            {{- if .Values.onePassword.enabled }}
-            - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword=${serverPassword}?RCONEnabled=True?ServerAdminPassword=${adminPassword}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
-            {{- else }}
-            - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
-            {{- end }}
-            # Custom start parameters (command line flags starting with -)
-            {{- if .Values.server.customStartParameters }}
-            {{- range (split " " .Values.server.customStartParameters) }}
-            {{- if . }}
-            - {{ . | quote }}
-            {{- end }}
-            {{- end }}
-            {{- end }}
-            # Server configuration flags
-            - "-WinLiveMaxPlayers={{ .Values.server.maxPlayers }}"
-            - "-Port={{ .Values.server.ports.game }}"
-            - "-QueryPort={{ .Values.server.ports.query }}"
-            - "-RCONPort={{ .Values.server.ports.rcon }}"
-            - "-game"
-            {{- if .Values.server.clusterID }}
-            - "-ClusterDirOverride=/ark/cluster"
-            - "-ClusterId={{ .Values.server.clusterID }}"
-            {{- end }}
-            - "-server"
-            - "-log"
-            {{- if .Values.server.modIDs }}
-            - "-mods={{ .Values.server.modIDs }}"
-            {{- end }}
+            - "-c"
+            - |
+              {{- if .Values.onePassword.enabled }}
+              exec /entrypoint.sh run "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword=${serverPassword}?RCONEnabled=True?ServerAdminPassword=${adminPassword}?AltSaveDirectoryName={{ .Values.server.saveDir }}" \
+              {{- else }}
+              exec /entrypoint.sh run "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}" \
+              {{- end }}
+              {{- if .Values.server.customStartParameters }}
+              {{- range (split " " .Values.server.customStartParameters) }}
+              {{- if . }}
+                {{ . | quote }} \
+              {{- end }}
+              {{- end }}
+              {{- end }}
+                "-WinLiveMaxPlayers={{ .Values.server.maxPlayers }}" \
+                "-Port={{ .Values.server.ports.game }}" \
+                "-QueryPort={{ .Values.server.ports.query }}" \
+                "-RCONPort={{ .Values.server.ports.rcon }}" \
+                "-game" \
+              {{- if .Values.server.clusterID }}
+                "-ClusterDirOverride=/ark/cluster" \
+                "-ClusterId={{ .Values.server.clusterID }}" \
+              {{- end }}
+                "-server" \
+                "-log"{{- if .Values.server.modIDs }} \
+                "-mods={{ .Values.server.modIDs }}"{{- end }}
           ports:
             - name: game-tcp
               containerPort: {{ .Values.server.ports.game }}
