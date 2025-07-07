@@ -111,7 +111,11 @@ spec:
           args: 
             - "run"
             # Map name with query parameters concatenated (ARK wiki format)
+            {{- if .Values.onePassword.enabled }}
+            - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword=${serverPassword}?RCONEnabled=True?ServerAdminPassword=${adminPassword}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
+            {{- else }}
             - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
+            {{- end }}
             # Custom start parameters (command line flags starting with -)
             {{- if .Values.server.customStartParameters }}
             {{- range (split " " .Values.server.customStartParameters) }}
@@ -188,6 +192,12 @@ spec:
             - name: {{ .name }}
               value: {{ .value | quote }}
             {{- end }}
+          
+          {{- if .Values.onePassword.enabled }}
+          envFrom:
+            - secretRef:
+                name: {{ include "asa-server.fullname" . }}-secret
+          {{- end }}
           
           {{- if .Values.probes.startup.enabled }}
           startupProbe:

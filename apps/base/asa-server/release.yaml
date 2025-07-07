@@ -30,8 +30,8 @@ spec:
     # Server Settings - private server for friends (Zerschranzer format)
     server:
       mapName: "Ragnarok_WP"  # Ragnarok - Norse-themed map with ruins, longhouses, and hot springs
-      serverName: "Ragnarok Adventures"  # Updated from sessionName to serverName
-      serverPassword: ""  # Will be overridden by 1Password if enabled  
+      serverName: "RagnarokAdventures"  # No spaces - ARK can have issues with spaces in server names
+      serverPassword: "friends123"  # Simple password (will be overridden by 1Password if enabled)  
       serverAdminPassword: "fallback-admin-pass"  # Will be overridden by 1Password if enabled
       maxPlayers: 10  # Good size for friends group
       saveDir: "ragnarok-asa"  # Unique save directory name
