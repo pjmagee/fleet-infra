@@ -82,11 +82,19 @@ spec:
         accessModes:
           - ReadWriteOnce
     
-    # Security context for proper file permissions
+    # Security context for proper file permissions - temporary fix for permissions issue
     podSecurityContext:
-      runAsUser: 7777
-      runAsGroup: 7777
-      fsGroup: 7777
+      runAsUser: 0
+      runAsGroup: 0
+      fsGroup: 0
+    
+    # Container security context - run as root temporarily  
+    securityContext:
+      runAsUser: 0
+      runAsGroup: 0
+      allowPrivilegeEscalation: true
+      readOnlyRootFilesystem: false
+      runAsNonRoot: false
     
     # Service configuration (simplified for Zerschranzer)
     service:
