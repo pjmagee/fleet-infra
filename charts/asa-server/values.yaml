@@ -5,7 +5,7 @@
 # ASA Server Configuration
 image:
   repository: zerschranzer/ark-ascended-base
-  pullPolicy: Never  # Use locally built image, don't try to pull from registry
+  pullPolicy: Always  # Always pull to get latest updates
   # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
 

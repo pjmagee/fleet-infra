@@ -86,10 +86,13 @@ spec:
     service:
       type: ClusterIP
     
-    # Probe settings - adjusted for Zerschranzer optimizations
+    # Add restart policy for debugging
+    restartPolicy: Always
+    
+    # Probe settings - temporarily disabled for debugging
     probes:
       startup:
-        enabled: true
+        enabled: false  # Disabled for debugging
         initialDelaySeconds: 180  # Zerschranzer is more optimized
         periodSeconds: 10
         timeoutSeconds: 5
@@ -97,7 +100,7 @@ spec:
         successThreshold: 1
       
       liveness:
-        enabled: true
+        enabled: false  # Disabled for debugging
         initialDelaySeconds: 30
         periodSeconds: 15
         timeoutSeconds: 5
@@ -105,7 +108,7 @@ spec:
         successThreshold: 1
       
       readiness:
-        enabled: true
+        enabled: false  # Disabled for debugging
         initialDelaySeconds: 30
         periodSeconds: 10
         timeoutSeconds: 5
