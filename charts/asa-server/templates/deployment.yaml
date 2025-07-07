@@ -31,14 +31,13 @@ spec:
         # Fix machine-id for Proton/Wine compatibility
         - name: setup-machine-id
           image: busybox:1.35
-          command: ['sh', '-c']
-          args:
+          command: ['sh', '-c']              args:
             - |
               echo "Setting up machine-id for Proton compatibility..."
               # Generate a machine-id if it doesn't exist or is empty
               if [ ! -s /target/etc/machine-id ]; then
                 echo "Generating machine-id..."
-                printf "%032x\n" $(( $(date +%s) * $$)) > /target/etc/machine-id
+                printf "%032x\n" "$(date +%s)" > /target/etc/machine-id
                 chmod 644 /target/etc/machine-id
                 echo "Machine-id created: $(cat /target/etc/machine-id)"
               else
