@@ -14,6 +14,12 @@ spec:
         name: flux-system
         namespace: flux-system
   values:
+    # Image configuration - fix the image repository
+    image:
+      repository: zerschranzer/ark-ascended-base
+      tag: "latest"
+      pullPolicy: IfNotPresent
+    
     # Timezone for the container
     timezone: "Europe/London"
     
@@ -33,7 +39,7 @@ spec:
         rcon: 27020
       
       # Mods - start with popular ones (updated field name for Zerschranzer)
-      modIDs: "731604991,889745138"  # S+ and Awesome SpyGlass
+      modIDs: ""  # No mods for debugging
       
       # Custom start parameters (Zerschranzer format)
       customStartParameters: "-NoBattlEye -crossplay -NoHangDetection -ForceAllowCaveFlyers -PreventHibernation"

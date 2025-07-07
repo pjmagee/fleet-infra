@@ -13,7 +13,7 @@ nameOverride: ""
 fullnameOverride: ""
 
 # Timezone for the container (optional, defaults to UTC)
-timezone: "UTC"
+timezone: "Europe/London"
 
 # Server Settings (Zerschranzer configuration format)
 server:
@@ -24,7 +24,7 @@ server:
   maxPlayers: 70
   
   # Map and world settings
-  mapName: "TheIsland_WP"  # TheIsland_WP, ScorchedEarth_WP, TheCenter_WP, Aberration_WP, Extinction_WP, Ragnarok_WP
+  mapName: "Ragnarok_WP"  # TheIsland_WP, ScorchedEarth_WP, TheCenter_WP, Aberration_WP, Extinction_WP, Ragnarok_WP
   saveDir: "asa-server"  # Must be unique per instance
   
   # Network configuration
