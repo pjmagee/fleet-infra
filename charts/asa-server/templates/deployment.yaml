@@ -72,6 +72,25 @@ spec:
             limits:
               memory: "4Gi"
               cpu: "2"
+        # Fix Wine/Proton directory permissions after ARK update
+        - name: fix-wine-permissions
+          image: busybox:1.35
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Fixing Wine/Proton directory permissions..."
+              if [ -d /ark/binaries/steamapps/compatdata ]; then
+                chown -R 0:0 /ark/binaries/steamapps/compatdata
+                chmod -R 755 /ark/binaries/steamapps/compatdata
+                echo "Wine/Proton permissions fixed"
+              else
+                echo "Wine/Proton compatdata directory not found, skipping"
+              fi
+          volumeMounts:
+            - name: ark-binaries
+              mountPath: /ark/binaries
+          securityContext:
+            runAsUser: 0
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
