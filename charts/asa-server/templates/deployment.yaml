@@ -113,11 +113,7 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
-            # Match Zerschranzer's user approach - run as the specified user
-            runAsUser: 7777
-            runAsGroup: 7777
-            runAsNonRoot: true
-            allowPrivilegeEscalation: false
+            {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           # Zerschranzer entrypoint command and args - exact format from ark_docker_manager.sh
