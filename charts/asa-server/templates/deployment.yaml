@@ -107,34 +107,17 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           # Zerschranzer entrypoint command and args - simplified for Docker image
-          command: ["/entrypoint.sh"]
+          command: ["/bin/bash"]
           args: 
-            - "run"
-            # Map and session parameters (Zerschranzer format)  
-            - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
-            # Custom start parameters
-            {{- if .Values.server.customStartParameters }}
-            {{- range (split " " .Values.server.customStartParameters) }}
-            {{- if . }}
-            - {{ . | quote }}
-            {{- end }}
-            {{- end }}
-            {{- end }}
-            # Server configuration flags
-            - "-WinLiveMaxPlayers={{ .Values.server.maxPlayers }}"
-            - "-Port={{ .Values.server.ports.game }}"
-            - "-QueryPort={{ .Values.server.ports.query }}"
-            - "-RCONPort={{ .Values.server.ports.rcon }}"
-            - "-game"
-            {{- if .Values.server.clusterID }}
-            - "-ClusterDirOverride=/ark/cluster"
-            - "-ClusterId={{ .Values.server.clusterID }}"
-            {{- end }}
-            - "-server"
-            - "-log"
-            {{- if .Values.server.modIDs }}
-            - "-mods={{ .Values.server.modIDs }}"
-            {{- end }}
+            - "-c"
+            - |
+              echo "=== ARK SERVER DEBUG STARTUP ==="
+              echo "Checking ARK executable..."
+              ls -la /ark/binaries/ShooterGame/Binaries/Win64/ArkAscendedServer.exe || echo "ARK executable not found!"
+              echo "Checking Proton..."
+              ls -la /opt/proton/GE-Proton10-4/proton || echo "Proton not found!"
+              echo "Starting entrypoint with debugging..."
+              exec /entrypoint.sh run "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}" {{- if .Values.server.customStartParameters }} {{- range (split " " .Values.server.customStartParameters) }} {{- if . }} {{ . | quote }} {{- end }} {{- end }} {{- end }} "-WinLiveMaxPlayers={{ .Values.server.maxPlayers }}" "-Port={{ .Values.server.ports.game }}" "-QueryPort={{ .Values.server.ports.query }}" "-RCONPort={{ .Values.server.ports.rcon }}" "-game" {{- if .Values.server.clusterID }} "-ClusterDirOverride=/ark/cluster" "-ClusterId={{ .Values.server.clusterID }}" {{- end }} "-server" "-log" {{- if .Values.server.modIDs }} "-mods={{ .Values.server.modIDs }}" {{- end }}
           ports:
             - name: game-tcp
               containerPort: {{ .Values.server.ports.game }}
