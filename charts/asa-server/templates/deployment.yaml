@@ -28,6 +28,27 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       # Init containers to prepare the environment
       initContainers:
+        # Fix machine-id for Proton/Wine compatibility
+        - name: setup-machine-id
+          image: busybox:1.35
+          command: ['sh', '-c']
+          args:
+            - |
+              echo "Setting up machine-id for Proton compatibility..."
+              # Generate a machine-id if it doesn't exist or is empty
+              if [ ! -s /target/etc/machine-id ]; then
+                echo "Generating machine-id..."
+                printf "%032x\n" $(( $(date +%s) * $$)) > /target/etc/machine-id
+                chmod 644 /target/etc/machine-id
+                echo "Machine-id created: $(cat /target/etc/machine-id)"
+              else
+                echo "Machine-id already exists: $(cat /target/etc/machine-id)"
+              fi
+          volumeMounts:
+            - name: machine-id
+              mountPath: /target/etc
+          securityContext:
+            runAsUser: 0
         # Fix permissions for ARK directories
         - name: fix-permissions
           image: busybox:1.35
@@ -153,6 +174,14 @@ spec:
             # UMASK for file permissions
             - name: UMASK
               value: "0007"
+            # Proton debugging and fixes
+            - name: PROTON_LOG
+              value: "1"
+            - name: PROTON_DUMP_DEBUG_COMMANDS
+              value: "1"
+            # Wine debugging (minimal to avoid spam)
+            - name: WINEDEBUG
+              value: "-all"
             
             # Extra environment variables (for custom configuration)
             {{- range .Values.extraEnvVars }}
@@ -212,6 +241,11 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           
           volumeMounts:
+            # Machine-id for Proton compatibility
+            - name: machine-id
+              mountPath: /etc/machine-id
+              subPath: machine-id
+              readOnly: true
             # ARK server binaries volume
             - name: ark-binaries
               mountPath: /ark/binaries
@@ -232,6 +266,9 @@ spec:
             {{- end }}
       
       volumes:
+        # Machine-id for Proton compatibility  
+        - name: machine-id
+          emptyDir: {}
         # Configuration files ConfigMap
         - name: config
           configMap:
