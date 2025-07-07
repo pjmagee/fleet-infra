@@ -88,9 +88,16 @@ spec:
               else
                 echo "Wine/Proton compatdata directory not found, skipping"
               fi
+              # Create proton logs directory
+              mkdir -p /ark/instance/proton-logs
+              chown -R 0:0 /ark/instance/proton-logs
+              chmod -R 755 /ark/instance/proton-logs
+              echo "Proton logs directory created"
           volumeMounts:
             - name: ark-binaries
               mountPath: /ark/binaries
+            - name: ark-instance
+              mountPath: /ark/instance
           securityContext:
             runAsUser: 0
       containers:
@@ -166,15 +173,16 @@ spec:
               value: "/ark/binaries/steamapps/compatdata/2430930"
             - name: STEAM_COMPAT_CLIENT_INSTALL_PATH
               value: "/opt"
-            # Proton debugging
+            # Proton debugging - enhanced for troubleshooting
             - name: PROTON_LOG
               value: "1"
             - name: PROTON_DUMP_DEBUG_COMMANDS
               value: "1"
-            # Wine debugging (minimal to avoid spam)
+            - name: PROTON_LOG_DIR
+              value: "/ark/instance/proton-logs"
+            # Wine debugging - disable verbose output for performance
             - name: WINEDEBUG
               value: "-all"
-            
             # Extra environment variables
             {{- range .Values.extraEnvVars }}
             - name: {{ .name }}
