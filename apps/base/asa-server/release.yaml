@@ -14,11 +14,11 @@ spec:
         name: flux-system
         namespace: flux-system
   values:
-    # Image configuration - fix the image repository
+    # Image configuration - use locally built image
     image:
       repository: zerschranzer/ark-ascended-base
       tag: "latest"
-      pullPolicy: IfNotPresent
+      pullPolicy: Never  # Use local image, don't pull from registry
     
     # Timezone for the container
     timezone: "Europe/London"

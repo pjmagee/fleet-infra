@@ -49,31 +49,14 @@ spec:
               mountPath: /target/etc
           securityContext:
             runAsUser: 0
-        # Fix permissions for ARK directories
-        - name: fix-permissions
-          image: busybox:1.35
-          command: ['sh', '-c']
-          args:
-            - |
-              echo "Setting permissions for ARK directories..."
-              chown -R 7777:7777 /ark/binaries /ark/instance
-              chmod -R 755 /ark/binaries /ark/instance
-              echo "Permissions set successfully"
-          volumeMounts:
-            - name: ark-binaries
-              mountPath: /ark/binaries
-            - name: ark-instance
-              mountPath: /ark/instance
-          securityContext:
-            runAsUser: 0  # Run as root to change ownership
-        # Download ARK server binaries
+        # Download ARK server binaries using Zerschranzer's update mode
         - name: ark-updater
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["/entrypoint.sh"]
           args: ["update"]
           securityContext:
-            runAsUser: 0  # Run as root to fix steamcmd permissions
+            runAsUser: 0
           volumeMounts:
             - name: ark-binaries
               mountPath: /ark/binaries
@@ -89,40 +72,19 @@ spec:
             limits:
               memory: "4Gi"
               cpu: "2"
-        # Create required directory structure for ARK server
-        - name: setup-directories
-          image: busybox:1.35
-          command: ['sh', '-c']
-          args:
-            - |
-              echo "Creating required ARK directory structure..."
-              mkdir -p /ark/binaries/ShooterGame/Saved/Config/WindowsServer
-              mkdir -p /ark/binaries/ShooterGame/Saved/SavedArks
-              mkdir -p /ark/binaries/ShooterGame/Saved/Logs
-              mkdir -p /ark/instance
-              chown -R 7777:7777 /ark/binaries/ShooterGame/Saved /ark/instance
-              chmod -R 755 /ark/binaries/ShooterGame/Saved /ark/instance
-              echo "Directory structure created successfully"
-          volumeMounts:
-            - name: ark-binaries
-              mountPath: /ark/binaries
-            - name: ark-instance
-              mountPath: /ark/instance
-          securityContext:
-            runAsUser: 0  # Run as root to create directories
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
             {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          # Zerschranzer entrypoint command and args - exact format from ark_docker_manager.sh
+          # Zerschranzer entrypoint command and args - simplified for Docker image
           command: ["/entrypoint.sh"]
           args: 
             - "run"
-            # Map and session parameters (exact Zerschranzer format - first argument only)  
+            # Map and session parameters (Zerschranzer format)  
             - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
-            # Custom start parameters (parsed from space-separated string)
+            # Custom start parameters
             {{- if .Values.server.customStartParameters }}
             {{- range (split " " .Values.server.customStartParameters) }}
             {{- if . }}
@@ -130,7 +92,7 @@ spec:
             {{- end }}
             {{- end }}
             {{- end }}
-            # Individual server configuration flags (separate arguments)
+            # Server configuration flags
             - "-WinLiveMaxPlayers={{ .Values.server.maxPlayers }}"
             - "-Port={{ .Values.server.ports.game }}"
             - "-QueryPort={{ .Values.server.ports.query }}"
@@ -171,18 +133,19 @@ spec:
               hostPort: {{ .Values.server.ports.rcon }}
               {{- end }}
           env:
-            # Timezone (set to UTC as default for containers)
+            # Timezone
             - name: TZ
               value: {{ .Values.timezone | default "UTC" | quote }}
-            # UMASK for file permissions (CRITICAL for Zerschranzer)
+            # The Docker image already includes STEAMCMDDIR, PROTON_VERSION, PROTONDIR
+            # UMASK for file permissions (required by Zerschranzer)
             - name: UMASK
               value: "0007"
-            # Critical Proton environment variables (from Zerschranzer implementation)
+            # Proton environment variables (set by entrypoint.sh but we can override)
             - name: STEAM_COMPAT_DATA_PATH
               value: "/ark/binaries/steamapps/compatdata/2430930"
             - name: STEAM_COMPAT_CLIENT_INSTALL_PATH
               value: "/opt"
-            # Proton debugging and fixes
+            # Proton debugging
             - name: PROTON_LOG
               value: "1"
             - name: PROTON_DUMP_DEBUG_COMMANDS
@@ -191,7 +154,7 @@ spec:
             - name: WINEDEBUG
               value: "-all"
             
-            # Extra environment variables (for custom configuration)
+            # Extra environment variables
             {{- range .Values.extraEnvVars }}
             - name: {{ .name }}
               value: {{ .value | quote }}
