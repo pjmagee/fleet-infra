@@ -23,6 +23,10 @@ spec:
     # Timezone for the container
     timezone: "Europe/London"
     
+    # Update settings - disable for faster deployment when files are already downloaded
+    update:
+      enabled: false  # Skip ARK update/verification since files are already downloaded
+    
     # Server Settings - private server for friends (Zerschranzer format)
     server:
       mapName: "Ragnarok_WP"  # Ragnarok - Norse-themed map with ruins, longhouses, and hot springs

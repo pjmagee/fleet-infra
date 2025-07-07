@@ -15,6 +15,12 @@ fullnameOverride: ""
 # Timezone for the container (optional, defaults to UTC)
 timezone: "Europe/London"
 
+# Update settings
+update:
+  # Whether to run ARK server update/verification during pod startup
+  # Set to false to skip update if you know files are already downloaded
+  enabled: true
+  
 # Server Settings (Zerschranzer configuration format)
 server:
   # Basic settings
