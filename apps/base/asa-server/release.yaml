@@ -20,9 +20,9 @@ spec:
       tag: "latest"
       pullPolicy: Never  # Use local image, don't pull from registry
     
-    # Update configuration - enable to download ARK server files to persistent storage
+    # Update configuration - disable for now to simplify troubleshooting
     update:
-      enabled: true  # Enable to download ~50GB of ARK server files to hostPath storage
+      enabled: false  # Disable to avoid permission issues during download
     
     # Timezone for the container
     timezone: "Europe/London"
@@ -62,31 +62,23 @@ spec:
         cpu: 4
         memory: 16Gi
     
-    # Persistence configuration - using hostPath for existing ARK server files
+    # Persistence configuration - disable to eliminate permission issues
     persistence:
-      enabled: true  # Re-enable persistence since hostPath IS persistent storage
-      
-      # Use hostPath for Docker Desktop development
-      type: "hostPath"
-      
-      # Host paths - Docker Desktop format (corrected paths)
-      hostPaths:
-        binaries: "/run/desktop/mnt/host/m/docker/asa-server/server-files"  # Shared ARK binaries
-        instance: "/run/desktop/mnt/host/m/docker/asa-server/instance"      # Instance data
+      enabled: false  # Disable persistence temporarily to debug permission issues
     
-    # Security context for proper file permissions - match ark_docker_manager.sh
+    # Security context - run as root temporarily to debug permission issues
     podSecurityContext:
-      runAsUser: 1001  # Use Docker Desktop's default user ID
-      runAsGroup: 121  # Use Docker Desktop's docker group ID
-      fsGroup: 121
+      runAsUser: 0  # Run as root temporarily
+      runAsGroup: 0
+      fsGroup: 0
     
-    # Container security context - run as non-root user (main container)
+    # Container security context - run as root temporarily
     securityContext:
-      runAsUser: 1001
-      runAsGroup: 121
-      allowPrivilegeEscalation: false
+      runAsUser: 0
+      runAsGroup: 0
+      allowPrivilegeEscalation: true
       readOnlyRootFilesystem: false
-      runAsNonRoot: true
+      runAsNonRoot: false
     
     # Service configuration (simplified for Zerschranzer)
     service:
