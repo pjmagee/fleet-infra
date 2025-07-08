@@ -20,9 +20,9 @@ spec:
       tag: "latest"
       pullPolicy: Never  # Use local image, don't pull from registry
     
-    # Update configuration - disable update since files are already downloaded
+    # Update configuration - enable to download ARK server files to persistent storage
     update:
-      enabled: false  # Skip ARK server update/verification for faster deployment
+      enabled: true  # Enable to download ~50GB of ARK server files to hostPath storage
     
     # Timezone for the container
     timezone: "Europe/London"
@@ -62,41 +62,28 @@ spec:
         cpu: 4
         memory: 16Gi
     
-    # Persistence configuration (updated for Zerschranzer architecture)
+    # Persistence configuration - using hostPath for existing ARK server files
     persistence:
-      enabled: true
+      enabled: true  # Re-enable persistence since hostPath IS persistent storage
       
       # Use hostPath for Docker Desktop development
       type: "hostPath"
       
-      # Host paths - Docker Desktop format
+      # Host paths - Docker Desktop format (corrected paths)
       hostPaths:
         binaries: "/run/desktop/mnt/host/m/docker/asa-server/server-files"  # Shared ARK binaries
         instance: "/run/desktop/mnt/host/m/docker/asa-server/instance"      # Instance data
-      
-      # PVC settings (available for production clusters)
-      binaries:
-        size: 60Gi
-        storageClass: ""
-        accessModes:
-          - ReadWriteOnce
-      
-      instance:
-        size: 15Gi  # Instance configs, saves, and logs
-        storageClass: ""
-        accessModes:
-          - ReadWriteOnce
     
     # Security context for proper file permissions - match ark_docker_manager.sh
     podSecurityContext:
-      runAsUser: 1000  # Non-root user like ark_docker_manager.sh
-      runAsGroup: 1000
-      fsGroup: 1000
+      runAsUser: 1001  # Use Docker Desktop's default user ID
+      runAsGroup: 121  # Use Docker Desktop's docker group ID
+      fsGroup: 121
     
-    # Container security context - run as non-root user
+    # Container security context - run as non-root user (main container)
     securityContext:
-      runAsUser: 1000
-      runAsGroup: 1000
+      runAsUser: 1001
+      runAsGroup: 121
       allowPrivilegeEscalation: false
       readOnlyRootFilesystem: false
       runAsNonRoot: true

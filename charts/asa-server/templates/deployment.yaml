@@ -50,20 +50,23 @@ spec:
               mkdir -p /ark/binaries/ShooterGame/Saved/Config/WindowsServer
               mkdir -p /ark/binaries/steamapps/compatdata/2430930
               mkdir -p /ark/instance/proton-logs
-              mkdir -p /root/.config/protonfixes
+              # Create protonfixes config directory for user 1000 (non-root)
+              mkdir -p /tmp/protonfixes
               
               echo "Setting permissions (matching ark_docker_manager.sh setup_host_directory)..."
-              # Set proper ownership and permissions for ARK directories (matching script)
-              chown -R 1000:1000 /ark/binaries
-              chown -R 1000:1000 /ark/instance
+              # Set proper ownership and permissions for ARK directories (matching Docker Desktop user)
+              chown -R 1001:121 /ark/binaries
+              chown -R 1001:121 /ark/instance
+              chown -R 1001:121 /tmp/protonfixes
               
               # Set permissions with Set-GID bit (matching script approach)
               chmod -R 2770 /ark/binaries
               chmod -R 2770 /ark/instance
+              chmod -R 755 /tmp/protonfixes
               
               # Fix Wine/Proton directory permissions if they exist
               if [ -d /ark/binaries/steamapps/compatdata ]; then
-                chown -R 1000:1000 /ark/binaries/steamapps/compatdata
+                chown -R 1001:121 /ark/binaries/steamapps/compatdata
                 chmod -R 2770 /ark/binaries/steamapps/compatdata
                 echo "Wine/Proton permissions fixed"
               fi
