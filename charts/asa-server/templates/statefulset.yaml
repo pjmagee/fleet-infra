@@ -1,0 +1,384 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ include "asa-server.fullname" . }}
+  labels:
+    {{- include "asa-server.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ include "asa-server.fullname" . }}
+  replicas: 1
+  updateStrategy:
+    type: RollingUpdate
+  selector:
+    matchLabels:
+      {{- include "asa-server.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "asa-server.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.serviceAccount.name }}
+      serviceAccountName: {{ . }}
+      {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      # Init containers for setup
+      initContainers:
+        # Generate machine-id for SteamCMD (required for authentication)
+        - name: machine-id
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0  # Run as root for system setup
+            runAsGroup: 0
+            allowPrivilegeEscalation: true
+            readOnlyRootFilesystem: false
+            runAsNonRoot: false
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              echo ">>> Generating machine-id for SteamCMD..."
+              
+              # Create machine-id in the instance directory
+              if [ ! -f /ark/instance/machine-id ]; then
+                  echo "$(cat /proc/sys/kernel/random/uuid | tr -d '-')" > /ark/instance/machine-id
+                  chmod 444 /ark/instance/machine-id
+                  echo ">>> Machine-id generated: $(cat /ark/instance/machine-id)"
+              else
+                  echo ">>> Machine-id already exists: $(cat /ark/instance/machine-id)"
+              fi
+              
+              echo ">>> Machine-id setup complete"
+          volumeMounts:
+            - name: ark-instance
+              mountPath: /ark/instance
+        
+        {{- if .Values.update.enabled }}
+        # Download/update ARK server files
+        - name: ark-updater
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0  # Run as root for file downloads
+            runAsGroup: 0
+            allowPrivilegeEscalation: true
+            readOnlyRootFilesystem: false
+            runAsNonRoot: false
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              # Set machine-id for SteamCMD if available
+              if [ -f /ark/instance/machine-id ]; then
+                  export MACHINE_ID=$(cat /ark/instance/machine-id)
+                  echo ">>> Machine-id set: $MACHINE_ID"
+              fi
+              
+              # Run the update
+              exec /entrypoint.sh update
+          env:
+            - name: TZ
+              value: {{ .Values.timezone | default "UTC" | quote }}
+            - name: UMASK
+              value: "0007"
+          volumeMounts:
+            - name: ark-binaries
+              mountPath: /ark/binaries
+            - name: ark-instance
+              mountPath: /ark/instance
+        {{- end }}
+        
+        # Set proper permissions on mounted volumes
+        - name: permissions
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0  # Run as root for permission changes
+            runAsGroup: 0
+            allowPrivilegeEscalation: true
+            readOnlyRootFilesystem: false
+            runAsNonRoot: false
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              echo ">>> Setting up permissions..."
+              
+              # Create required directories
+              mkdir -p /ark/binaries /ark/instance
+              
+              # Create required ARK server directory structure
+              mkdir -p /ark/binaries/ShooterGame/Saved/Config/WindowsServer
+              
+              # Set ownership to steam user (1000:121)
+              chown -R 1000:121 /ark/binaries /ark/instance
+              
+              # Set permissions - group writable, others readable
+              chmod -R 2775 /ark/binaries /ark/instance
+              
+              # Set setgid bit on directories for proper group inheritance
+              find /ark/binaries -type d -exec chmod g+s {} \;
+              find /ark/instance -type d -exec chmod g+s {} \;
+              
+              # Copy machine-id to /etc/machine-id if it exists
+              if [ -f /ark/instance/machine-id ]; then
+                  cp /ark/instance/machine-id /etc/machine-id
+                  chmod 444 /etc/machine-id
+                  echo ">>> Machine-id copied to /etc/machine-id: $(cat /etc/machine-id)"
+              fi
+              
+              echo ">>> Permissions setup complete"
+              ls -la /ark/
+          volumeMounts:
+            - name: ark-binaries
+              mountPath: /ark/binaries
+            - name: ark-instance
+              mountPath: /ark/instance
+      
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # Simple command matching ark_docker_manager.sh exactly
+          command: ["/entrypoint.sh"]
+          args: 
+            - "run"
+            {{- if .Values.onePassword.enabled }}
+            - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword=${serverPassword}?RCONEnabled=True?ServerAdminPassword=${adminPassword}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
+            {{- else }}
+            - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
+            {{- end }}
+            {{- if .Values.server.customStartParameters }}
+            {{- range (split " " .Values.server.customStartParameters) }}
+            {{- if . }}
+            - {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            - "-WinLiveMaxPlayers={{ .Values.server.maxPlayers }}"
+            - "-Port={{ .Values.server.ports.game }}"
+            - "-QueryPort={{ .Values.server.ports.query }}"
+            - "-RCONPort={{ .Values.server.ports.rcon }}"
+            - "-game"
+            {{- if .Values.server.clusterID }}
+            - "-ClusterDirOverride=/ark/cluster"
+            - "-ClusterId={{ .Values.server.clusterID }}"
+            {{- end }}
+            - "-server"
+            - "-log"
+            {{- if .Values.server.modIDs }}
+            - "-mods={{ .Values.server.modIDs }}"
+            {{- end }}
+          ports:
+            - name: game-tcp
+              containerPort: {{ .Values.server.ports.game }}
+              protocol: TCP
+              {{- if .Values.hostPort.enabled }}
+              hostPort: {{ .Values.server.ports.game }}
+              {{- end }}
+            - name: game-udp
+              containerPort: {{ .Values.server.ports.game }}
+              protocol: UDP
+              {{- if .Values.hostPort.enabled }}
+              hostPort: {{ .Values.server.ports.game }}
+              {{- end }}
+            - name: query-udp
+              containerPort: {{ .Values.server.ports.query }}
+              protocol: UDP
+              {{- if .Values.hostPort.enabled }}
+              hostPort: {{ .Values.server.ports.query }}
+              {{- end }}
+            - name: rcon
+              containerPort: {{ .Values.server.ports.rcon }}
+              protocol: TCP
+              {{- if .Values.hostPort.enabled }}
+              hostPort: {{ .Values.server.ports.rcon }}
+              {{- end }}
+          env:
+            # Timezone
+            - name: TZ
+              value: {{ .Values.timezone | default "UTC" | quote }}
+            # The Docker image already includes STEAMCMDDIR, PROTON_VERSION, PROTONDIR
+            # UMASK for file permissions (required by Zerschranzer)
+            - name: UMASK
+              value: "0007"
+            # Proton environment variables (set by entrypoint.sh but we can override)
+            - name: STEAM_COMPAT_DATA_PATH
+              value: "/ark/binaries/steamapps/compatdata/2430930"
+            - name: STEAM_COMPAT_CLIENT_INSTALL_PATH
+              value: "/opt"
+            # Proton debugging - enhanced for troubleshooting
+            - name: PROTON_LOG
+              value: "1"
+            - name: PROTON_DUMP_DEBUG_COMMANDS
+              value: "1"
+            - name: PROTON_LOG_DIR
+              value: "/ark/instance/proton-logs"
+            # Wine debugging - disable verbose output for performance
+            - name: WINEDEBUG
+              value: "-all"
+            # Extra environment variables
+            {{- range .Values.extraEnvVars }}
+            - name: {{ .name }}
+              value: {{ .value | quote }}
+            {{- end }}
+          
+          {{- if .Values.onePassword.enabled }}
+          envFrom:
+            - secretRef:
+                name: {{ include "asa-server.fullname" . }}-secret
+          {{- end }}
+          
+          {{- if .Values.probes.startup.enabled }}
+          startupProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  # Check if ARK server process is running (Zerschranzer uses Proton)
+                  pgrep -f "ArkAscendedServer.exe" > /dev/null
+            initialDelaySeconds: {{ .Values.probes.startup.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.startup.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.startup.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.startup.failureThreshold }}
+            successThreshold: {{ .Values.probes.startup.successThreshold }}
+          {{- end }}
+          
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  # Check if ARK server process is running
+                  pgrep -f "ArkAscendedServer.exe" > /dev/null
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.liveness.failureThreshold }}
+            successThreshold: {{ .Values.probes.liveness.successThreshold }}
+          {{- end }}
+          
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - |
+                  # Check if server is listening on the game port using netstat
+                  netstat -ln | grep -q ":{{ .Values.server.ports.game }} "
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+            timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}
+            failureThreshold: {{ .Values.probes.readiness.failureThreshold }}
+            successThreshold: {{ .Values.probes.readiness.successThreshold }}
+          {{- end }}
+          
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          
+          volumeMounts:
+            # ARK server binaries volume
+            - name: ark-binaries
+              mountPath: /ark/binaries
+            # Instance-specific data
+            - name: ark-instance
+              mountPath: /ark/instance
+            # Configuration files - mounted to the instance directory (Zerschranzer pattern)
+            - name: config
+              mountPath: /ark/instance/Game.ini
+              subPath: Game.ini
+            - name: config
+              mountPath: /ark/instance/GameUserSettings.ini
+              subPath: GameUserSettings.ini
+            {{- if .Values.server.clusterID }}
+            # Cluster data volume
+            - name: ark-cluster
+              mountPath: /ark/cluster
+            {{- end }}
+      
+      volumes:
+        # Configuration files ConfigMap
+        - name: config
+          configMap:
+            name: {{ include "asa-server.fullname" . }}-config
+            defaultMode: 0644
+        {{- if .Values.server.clusterID }}
+        # Cluster data volume (shared between clustered instances)
+        - name: ark-cluster
+          {{- if and .Values.persistence.enabled (eq .Values.persistence.type "hostPath") }}
+          hostPath:
+            path: {{ .Values.persistence.hostPaths.cluster | default (printf "%s/clusters/%s" (.Values.persistence.hostPaths.binaries | dir) .Values.server.clusterID) }}
+            type: DirectoryOrCreate
+          {{- else if and .Values.persistence.enabled (eq .Values.persistence.type "pvc") }}
+          persistentVolumeClaim:
+            claimName: {{ include "asa-server.fullname" . }}-cluster
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- end }}
+      
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  
+  # StatefulSet persistent volume claim templates
+  # These PVCs are managed by the StatefulSet and persist across updates
+  volumeClaimTemplates:
+    - metadata:
+        name: ark-binaries
+        labels:
+          {{- include "asa-server.labels" . | nindent 10 }}
+      spec:
+        accessModes: {{ .Values.persistence.binaries.accessModes }}
+        {{- if .Values.persistence.binaries.storageClass }}
+        storageClassName: {{ .Values.persistence.binaries.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.binaries.size }}
+    - metadata:
+        name: ark-instance
+        labels:
+          {{- include "asa-server.labels" . | nindent 10 }}
+      spec:
+        accessModes: {{ .Values.persistence.instance.accessModes }}
+        {{- if .Values.persistence.instance.storageClass }}
+        storageClassName: {{ .Values.persistence.instance.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.instance.size }}
+    {{- if .Values.server.clusterID }}
+    - metadata:
+        name: ark-cluster
+        labels:
+          {{- include "asa-server.labels" . | nindent 10 }}
+      spec:
+        accessModes: {{ .Values.persistence.cluster.accessModes | default .Values.persistence.binaries.accessModes }}
+        {{- if .Values.persistence.cluster.storageClass }}
+        storageClassName: {{ .Values.persistence.cluster.storageClass }}
+        {{- else if .Values.persistence.binaries.storageClass }}
+        storageClassName: {{ .Values.persistence.binaries.storageClass }}
+        {{- end }}
+        resources:
+          requests:
+            storage: {{ .Values.persistence.cluster.size | default "5Gi" }}
+    {{- end }}
