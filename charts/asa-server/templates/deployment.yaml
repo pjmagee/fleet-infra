@@ -71,17 +71,8 @@ spec:
             allowPrivilegeEscalation: true
             readOnlyRootFilesystem: false
             runAsNonRoot: false
-          command: ["/bin/bash", "-c"]
-          args:
-            - |
-              # Create symlink to machine-id for SteamCMD
-              if [ -f /ark/instance/machine-id ]; then
-                  ln -sf /ark/instance/machine-id /etc/machine-id
-                  echo ">>> Machine-id linked: $(cat /etc/machine-id)"
-              fi
-              
-              # Run the update
-              exec /entrypoint.sh update
+          command: ["/entrypoint.sh"]
+          args: ["update"]
           env:
             - name: TZ
               value: {{ .Values.timezone | default "UTC" | quote }}
@@ -122,6 +113,13 @@ spec:
               find /ark/binaries -type d -exec chmod g+s {} \;
               find /ark/instance -type d -exec chmod g+s {} \;
               
+              # Copy machine-id to /etc/machine-id if it exists
+              if [ -f /ark/instance/machine-id ]; then
+                  cp /ark/instance/machine-id /etc/machine-id
+                  chmod 444 /etc/machine-id
+                  echo ">>> Machine-id copied to /etc/machine-id: $(cat /etc/machine-id)"
+              fi
+              
               echo ">>> Permissions setup complete"
               ls -la /ark/
           volumeMounts:
@@ -137,43 +135,35 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           # Simple command matching ark_docker_manager.sh exactly
-          command: ["/bin/bash", "-c"]
+          command: ["/entrypoint.sh"]
           args: 
-            - |
-              # Create symlink to machine-id for SteamCMD
-              if [ -f /ark/instance/machine-id ]; then
-                  ln -sf /ark/instance/machine-id /etc/machine-id
-                  echo ">>> Machine-id linked: $(cat /etc/machine-id)"
-              fi
-              
-              # Run the ARK server
-              exec /entrypoint.sh run \
-                {{- if .Values.onePassword.enabled }}
-                "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword=${serverPassword}?RCONEnabled=True?ServerAdminPassword=${adminPassword}?AltSaveDirectoryName={{ .Values.server.saveDir }}" \
-                {{- else }}
-                "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}" \
-                {{- end }}
-                {{- if .Values.server.customStartParameters }}
-                {{- range (split " " .Values.server.customStartParameters) }}
-                {{- if . }}
-                {{ . | quote }} \
-                {{- end }}
-                {{- end }}
-                {{- end }}
-                "-WinLiveMaxPlayers={{ .Values.server.maxPlayers }}" \
-                "-Port={{ .Values.server.ports.game }}" \
-                "-QueryPort={{ .Values.server.ports.query }}" \
-                "-RCONPort={{ .Values.server.ports.rcon }}" \
-                "-game" \
-                {{- if .Values.server.clusterID }}
-                "-ClusterDirOverride=/ark/cluster" \
-                "-ClusterId={{ .Values.server.clusterID }}" \
-                {{- end }}
-                "-server" \
-                "-log" \
-                {{- if .Values.server.modIDs }}
-                "-mods={{ .Values.server.modIDs }}" \
-                {{- end }}
+            - "run"
+            {{- if .Values.onePassword.enabled }}
+            - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword=${serverPassword}?RCONEnabled=True?ServerAdminPassword=${adminPassword}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
+            {{- else }}
+            - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
+            {{- end }}
+            {{- if .Values.server.customStartParameters }}
+            {{- range (split " " .Values.server.customStartParameters) }}
+            {{- if . }}
+            - {{ . | quote }}
+            {{- end }}
+            {{- end }}
+            {{- end }}
+            - "-WinLiveMaxPlayers={{ .Values.server.maxPlayers }}"
+            - "-Port={{ .Values.server.ports.game }}"
+            - "-QueryPort={{ .Values.server.ports.query }}"
+            - "-RCONPort={{ .Values.server.ports.rcon }}"
+            - "-game"
+            {{- if .Values.server.clusterID }}
+            - "-ClusterDirOverride=/ark/cluster"
+            - "-ClusterId={{ .Values.server.clusterID }}"
+            {{- end }}
+            - "-server"
+            - "-log"
+            {{- if .Values.server.modIDs }}
+            - "-mods={{ .Values.server.modIDs }}"
+            {{- end }}
           ports:
             - name: game-tcp
               containerPort: {{ .Values.server.ports.game }}
