@@ -175,11 +175,6 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           
           volumeMounts:
-            # Machine-id for Proton compatibility
-            - name: machine-id
-              mountPath: /etc/machine-id
-              subPath: machine-id
-              readOnly: true
             # ARK server binaries volume
             - name: ark-binaries
               mountPath: /ark/binaries
@@ -200,9 +195,6 @@ spec:
             {{- end }}
       
       volumes:
-        # Machine-id for Proton compatibility  
-        - name: machine-id
-          emptyDir: {}
         # Configuration files ConfigMap
         - name: config
           configMap:
