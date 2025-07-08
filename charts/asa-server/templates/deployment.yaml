@@ -42,17 +42,23 @@ spec:
           args:
             - |
               echo ">>> Generating machine-id for SteamCMD..."
-              if [ ! -f /etc/machine-id ]; then
-                  echo "$(cat /proc/sys/kernel/random/uuid | tr -d '-')" > /etc/machine-id
-                  chmod 444 /etc/machine-id
-                  echo ">>> Machine-id generated: $(cat /etc/machine-id)"
+              
+              # Create machine-id in the instance directory
+              if [ ! -f /ark/instance/machine-id ]; then
+                  echo "$(cat /proc/sys/kernel/random/uuid | tr -d '-')" > /ark/instance/machine-id
+                  chmod 444 /ark/instance/machine-id
+                  echo ">>> Machine-id generated: $(cat /ark/instance/machine-id)"
               else
-                  echo ">>> Machine-id already exists: $(cat /etc/machine-id)"
+                  echo ">>> Machine-id already exists: $(cat /ark/instance/machine-id)"
               fi
+              
+              # Create symlink to expected location
+              ln -sf /ark/instance/machine-id /etc/machine-id
+              
+              echo ">>> Machine-id setup complete"
           volumeMounts:
-            - name: machine-id
-              mountPath: /etc/machine-id
-              subPath: machine-id
+            - name: ark-instance
+              mountPath: /ark/instance
         
         {{- if .Values.update.enabled }}
         # Download/update ARK server files
@@ -65,8 +71,17 @@ spec:
             allowPrivilegeEscalation: true
             readOnlyRootFilesystem: false
             runAsNonRoot: false
-          command: ["/entrypoint.sh"]
-          args: ["update"]
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              # Create symlink to machine-id for SteamCMD
+              if [ -f /ark/instance/machine-id ]; then
+                  ln -sf /ark/instance/machine-id /etc/machine-id
+                  echo ">>> Machine-id linked: $(cat /etc/machine-id)"
+              fi
+              
+              # Run the update
+              exec /entrypoint.sh update
           env:
             - name: TZ
               value: {{ .Values.timezone | default "UTC" | quote }}
@@ -77,9 +92,6 @@ spec:
               mountPath: /ark/binaries
             - name: ark-instance
               mountPath: /ark/instance
-            - name: machine-id
-              mountPath: /etc/machine-id
-              subPath: machine-id
         {{- end }}
         
         # Set proper permissions on mounted volumes
@@ -125,35 +137,43 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           # Simple command matching ark_docker_manager.sh exactly
-          command: ["/entrypoint.sh"]
+          command: ["/bin/bash", "-c"]
           args: 
-            - "run"
-            {{- if .Values.onePassword.enabled }}
-            - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword=${serverPassword}?RCONEnabled=True?ServerAdminPassword=${adminPassword}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
-            {{- else }}
-            - "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}"
-            {{- end }}
-            {{- if .Values.server.customStartParameters }}
-            {{- range (split " " .Values.server.customStartParameters) }}
-            {{- if . }}
-            - {{ . | quote }}
-            {{- end }}
-            {{- end }}
-            {{- end }}
-            - "-WinLiveMaxPlayers={{ .Values.server.maxPlayers }}"
-            - "-Port={{ .Values.server.ports.game }}"
-            - "-QueryPort={{ .Values.server.ports.query }}"
-            - "-RCONPort={{ .Values.server.ports.rcon }}"
-            - "-game"
-            {{- if .Values.server.clusterID }}
-            - "-ClusterDirOverride=/ark/cluster"
-            - "-ClusterId={{ .Values.server.clusterID }}"
-            {{- end }}
-            - "-server"
-            - "-log"
-            {{- if .Values.server.modIDs }}
-            - "-mods={{ .Values.server.modIDs }}"
-            {{- end }}
+            - |
+              # Create symlink to machine-id for SteamCMD
+              if [ -f /ark/instance/machine-id ]; then
+                  ln -sf /ark/instance/machine-id /etc/machine-id
+                  echo ">>> Machine-id linked: $(cat /etc/machine-id)"
+              fi
+              
+              # Run the ARK server
+              exec /entrypoint.sh run \
+                {{- if .Values.onePassword.enabled }}
+                "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword=${serverPassword}?RCONEnabled=True?ServerAdminPassword=${adminPassword}?AltSaveDirectoryName={{ .Values.server.saveDir }}" \
+                {{- else }}
+                "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}" \
+                {{- end }}
+                {{- if .Values.server.customStartParameters }}
+                {{- range (split " " .Values.server.customStartParameters) }}
+                {{- if . }}
+                {{ . | quote }} \
+                {{- end }}
+                {{- end }}
+                {{- end }}
+                "-WinLiveMaxPlayers={{ .Values.server.maxPlayers }}" \
+                "-Port={{ .Values.server.ports.game }}" \
+                "-QueryPort={{ .Values.server.ports.query }}" \
+                "-RCONPort={{ .Values.server.ports.rcon }}" \
+                "-game" \
+                {{- if .Values.server.clusterID }}
+                "-ClusterDirOverride=/ark/cluster" \
+                "-ClusterId={{ .Values.server.clusterID }}" \
+                {{- end }}
+                "-server" \
+                "-log" \
+                {{- if .Values.server.modIDs }}
+                "-mods={{ .Values.server.modIDs }}" \
+                {{- end }}
           ports:
             - name: game-tcp
               containerPort: {{ .Values.server.ports.game }}
@@ -266,10 +286,6 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           
           volumeMounts:
-            # Machine-id for SteamCMD
-            - name: machine-id
-              mountPath: /etc/machine-id
-              subPath: machine-id
             # ARK server binaries volume
             - name: ark-binaries
               mountPath: /ark/binaries
@@ -290,18 +306,6 @@ spec:
             {{- end }}
       
       volumes:
-        # Machine-id for SteamCMD (persistent across restarts)
-        - name: machine-id
-          {{- if and .Values.persistence.enabled (eq .Values.persistence.type "hostPath") }}
-          hostPath:
-            path: {{ .Values.persistence.hostPaths.instance }}/machine-id
-            type: FileOrCreate
-          {{- else if and .Values.persistence.enabled (eq .Values.persistence.type "pvc") }}
-          persistentVolumeClaim:
-            claimName: {{ include "asa-server.fullname" . }}-instance
-          {{- else }}
-          emptyDir: {}
-          {{- end }}
         # Configuration files ConfigMap
         - name: config
           configMap:
