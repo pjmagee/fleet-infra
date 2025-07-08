@@ -34,7 +34,7 @@ spec:
       serverPassword: "friends123"  # Simple password (will be overridden by 1Password if enabled)  
       serverAdminPassword: "fallback-admin-pass"  # Will be overridden by 1Password if enabled
       maxPlayers: 10  # Good size for friends group
-      saveDir: "ragnarok-asa"  # Unique save directory name
+      saveDir: "ragnarokasa"  # Unique save directory name
       
       # Standard ports  
       ports:

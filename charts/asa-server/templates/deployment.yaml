@@ -28,8 +28,8 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       # Init containers to prepare the environment
       initContainers:
-        # Fix machine-id for Proton/Wine compatibility
-        - name: setup-machine-id
+        # Setup machine-id and fix permissions for Proton/Wine compatibility
+        - name: setup-environment
           image: busybox:1.35
           command: ['sh', '-c']
           args:
@@ -44,9 +44,36 @@ spec:
               else
                 echo "Machine-id already exists: $(cat /target/etc/machine-id)"
               fi
+              
+              echo "Setting up ARK server directory structure..."
+              # Create directory structure that entrypoint.sh expects
+              mkdir -p /ark/binaries/ShooterGame/Saved/Config/WindowsServer
+              mkdir -p /ark/binaries/steamapps/compatdata/2430930
+              mkdir -p /ark/instance/proton-logs
+              mkdir -p /root/.config/protonfixes
+              
+              echo "Setting permissions (matching entrypoint.sh prepare_permissions pattern)..."
+              # Set proper ownership and permissions for ARK directories
+              chown -R 0:0 /ark/binaries
+              chmod -R 755 /ark/binaries
+              chown -R 0:0 /ark/instance
+              chmod -R 755 /ark/instance
+              
+              # Fix Wine/Proton directory permissions if they exist
+              if [ -d /ark/binaries/steamapps/compatdata ]; then
+                chown -R 0:0 /ark/binaries/steamapps/compatdata
+                chmod -R 755 /ark/binaries/steamapps/compatdata
+                echo "Wine/Proton permissions fixed"
+              fi
+              
+              echo "ARK server environment setup complete"
           volumeMounts:
             - name: machine-id
               mountPath: /target/etc
+            - name: ark-binaries
+              mountPath: /ark/binaries
+            - name: ark-instance
+              mountPath: /ark/instance
           securityContext:
             runAsUser: 0
         {{- if .Values.update.enabled }}
@@ -74,32 +101,6 @@ spec:
               memory: "4Gi"
               cpu: "2"
         {{- end }}
-        # Fix Wine/Proton directory permissions after ARK update
-        - name: fix-wine-permissions
-          image: busybox:1.35
-          command: ['sh', '-c']
-          args:
-            - |
-              echo "Fixing Wine/Proton directory permissions..."
-              if [ -d /ark/binaries/steamapps/compatdata ]; then
-                chown -R 0:0 /ark/binaries/steamapps/compatdata
-                chmod -R 755 /ark/binaries/steamapps/compatdata
-                echo "Wine/Proton permissions fixed"
-              else
-                echo "Wine/Proton compatdata directory not found, skipping"
-              fi
-              # Create proton logs directory
-              mkdir -p /ark/instance/proton-logs
-              chown -R 0:0 /ark/instance/proton-logs
-              chmod -R 755 /ark/instance/proton-logs
-              echo "Proton logs directory created"
-          volumeMounts:
-            - name: ark-binaries
-              mountPath: /ark/binaries
-            - name: ark-instance
-              mountPath: /ark/instance
-          securityContext:
-            runAsUser: 0
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
