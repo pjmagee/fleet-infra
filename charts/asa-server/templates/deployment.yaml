@@ -52,17 +52,19 @@ spec:
               mkdir -p /ark/instance/proton-logs
               mkdir -p /root/.config/protonfixes
               
-              echo "Setting permissions (matching entrypoint.sh prepare_permissions pattern)..."
-              # Set proper ownership and permissions for ARK directories
-              chown -R 0:0 /ark/binaries
-              chmod -R 755 /ark/binaries
-              chown -R 0:0 /ark/instance
-              chmod -R 755 /ark/instance
+              echo "Setting permissions (matching ark_docker_manager.sh setup_host_directory)..."
+              # Set proper ownership and permissions for ARK directories (matching script)
+              chown -R 1000:1000 /ark/binaries
+              chown -R 1000:1000 /ark/instance
+              
+              # Set permissions with Set-GID bit (matching script approach)
+              chmod -R 2770 /ark/binaries
+              chmod -R 2770 /ark/instance
               
               # Fix Wine/Proton directory permissions if they exist
               if [ -d /ark/binaries/steamapps/compatdata ]; then
-                chown -R 0:0 /ark/binaries/steamapps/compatdata
-                chmod -R 755 /ark/binaries/steamapps/compatdata
+                chown -R 1000:1000 /ark/binaries/steamapps/compatdata
+                chmod -R 2770 /ark/binaries/steamapps/compatdata
                 echo "Wine/Proton permissions fixed"
               fi
               

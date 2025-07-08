@@ -87,19 +87,19 @@ spec:
         accessModes:
           - ReadWriteOnce
     
-    # Security context for proper file permissions - temporary fix for permissions issue
+    # Security context for proper file permissions - match ark_docker_manager.sh
     podSecurityContext:
-      runAsUser: 0
-      runAsGroup: 0
-      fsGroup: 0
+      runAsUser: 1000  # Non-root user like ark_docker_manager.sh
+      runAsGroup: 1000
+      fsGroup: 1000
     
-    # Container security context - run as root temporarily  
+    # Container security context - run as non-root user
     securityContext:
-      runAsUser: 0
-      runAsGroup: 0
-      allowPrivilegeEscalation: true
+      runAsUser: 1000
+      runAsGroup: 1000
+      allowPrivilegeEscalation: false
       readOnlyRootFilesystem: false
-      runAsNonRoot: false
+      runAsNonRoot: true
     
     # Service configuration (simplified for Zerschranzer)
     service:
