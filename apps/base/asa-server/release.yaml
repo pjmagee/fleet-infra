@@ -20,9 +20,9 @@ spec:
       tag: "latest"
       pullPolicy: Never  # Use local image, don't pull from registry
     
-    # Update configuration - disable for now to simplify troubleshooting
+    # Update configuration - enable to download ARK server files
     update:
-      enabled: false  # Disable to avoid permission issues during download
+      enabled: true  # Enable to download ARK server files
     
     # Timezone for the container
     timezone: "Europe/London"
@@ -62,23 +62,34 @@ spec:
         cpu: 4
         memory: 16Gi
     
-    # Persistence configuration - disable to eliminate permission issues
+    # Persistence configuration - use PVC to avoid Docker Desktop permission issues
     persistence:
-      enabled: false  # Disable persistence temporarily to debug permission issues
+      enabled: true  # Enable persistence for server files
+      type: pvc  # Use PVC to avoid hostPath permission issues on Docker Desktop
+      binaries:
+        size: 50Gi  # ARK server files are large
+        accessModes:
+          - ReadWriteOnce
+        storageClass: "hostpath"  # Docker Desktop storage class
+      instance:
+        size: 10Gi  # Instance data (saves, configs, logs)
+        accessModes:
+          - ReadWriteOnce
+        storageClass: "hostpath"  # Docker Desktop storage class
     
-    # Security context - run as root temporarily to debug permission issues
+    # Security context - proper user/group for ARK server
     podSecurityContext:
-      runAsUser: 0  # Run as root temporarily
-      runAsGroup: 0
-      fsGroup: 0
+      runAsUser: 1000  # Steam user
+      runAsGroup: 121  # Steam group
+      fsGroup: 121
     
-    # Container security context - run as root temporarily
+    # Container security context - proper user/group for ARK server
     securityContext:
-      runAsUser: 0
-      runAsGroup: 0
-      allowPrivilegeEscalation: true
+      runAsUser: 1000
+      runAsGroup: 121
+      allowPrivilegeEscalation: false
       readOnlyRootFilesystem: false
-      runAsNonRoot: false
+      runAsNonRoot: true
     
     # Service configuration (simplified for Zerschranzer)
     service:

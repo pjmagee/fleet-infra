@@ -26,7 +26,98 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
-      # Simplified approach - no init containers for now
+      # Init containers for setup
+      initContainers:
+        # Generate machine-id for SteamCMD (required for authentication)
+        - name: machine-id
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0  # Run as root for system setup
+            runAsGroup: 0
+            allowPrivilegeEscalation: true
+            readOnlyRootFilesystem: false
+            runAsNonRoot: false
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              echo ">>> Generating machine-id for SteamCMD..."
+              if [ ! -f /etc/machine-id ]; then
+                  echo "$(cat /proc/sys/kernel/random/uuid | tr -d '-')" > /etc/machine-id
+                  chmod 444 /etc/machine-id
+                  echo ">>> Machine-id generated: $(cat /etc/machine-id)"
+              else
+                  echo ">>> Machine-id already exists: $(cat /etc/machine-id)"
+              fi
+          volumeMounts:
+            - name: machine-id
+              mountPath: /etc/machine-id
+              subPath: machine-id
+        
+        {{- if .Values.update.enabled }}
+        # Download/update ARK server files
+        - name: ark-updater
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0  # Run as root for file downloads
+            runAsGroup: 0
+            allowPrivilegeEscalation: true
+            readOnlyRootFilesystem: false
+            runAsNonRoot: false
+          command: ["/entrypoint.sh"]
+          args: ["update"]
+          env:
+            - name: TZ
+              value: {{ .Values.timezone | default "UTC" | quote }}
+            - name: UMASK
+              value: "0007"
+          volumeMounts:
+            - name: ark-binaries
+              mountPath: /ark/binaries
+            - name: ark-instance
+              mountPath: /ark/instance
+            - name: machine-id
+              mountPath: /etc/machine-id
+              subPath: machine-id
+        {{- end }}
+        
+        # Set proper permissions on mounted volumes
+        - name: permissions
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          securityContext:
+            runAsUser: 0  # Run as root for permission changes
+            runAsGroup: 0
+            allowPrivilegeEscalation: true
+            readOnlyRootFilesystem: false
+            runAsNonRoot: false
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              echo ">>> Setting up permissions..."
+              
+              # Create required directories
+              mkdir -p /ark/binaries /ark/instance
+              
+              # Set ownership to steam user (1000:121)
+              chown -R 1000:121 /ark/binaries /ark/instance
+              
+              # Set permissions - group writable, others readable
+              chmod -R 2775 /ark/binaries /ark/instance
+              
+              # Set setgid bit on directories for proper group inheritance
+              find /ark/binaries -type d -exec chmod g+s {} \;
+              find /ark/instance -type d -exec chmod g+s {} \;
+              
+              echo ">>> Permissions setup complete"
+              ls -la /ark/
+          volumeMounts:
+            - name: ark-binaries
+              mountPath: /ark/binaries
+            - name: ark-instance
+              mountPath: /ark/instance
+      
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
@@ -175,6 +266,10 @@ spec:
             {{- toYaml .Values.resources | nindent 12 }}
           
           volumeMounts:
+            # Machine-id for SteamCMD
+            - name: machine-id
+              mountPath: /etc/machine-id
+              subPath: machine-id
             # ARK server binaries volume
             - name: ark-binaries
               mountPath: /ark/binaries
@@ -195,6 +290,18 @@ spec:
             {{- end }}
       
       volumes:
+        # Machine-id for SteamCMD (persistent across restarts)
+        - name: machine-id
+          {{- if and .Values.persistence.enabled (eq .Values.persistence.type "hostPath") }}
+          hostPath:
+            path: {{ .Values.persistence.hostPaths.instance }}/machine-id
+            type: FileOrCreate
+          {{- else if and .Values.persistence.enabled (eq .Values.persistence.type "pvc") }}
+          persistentVolumeClaim:
+            claimName: {{ include "asa-server.fullname" . }}-instance
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
         # Configuration files ConfigMap
         - name: config
           configMap:
