@@ -91,9 +91,9 @@ spec:
       readOnlyRootFilesystem: false
       runAsNonRoot: true
     
-    # Service configuration (simplified for Zerschranzer)
+    # Service configuration - use NodePort for external access
     service:
-      type: ClusterIP
+      type: NodePort
     
     # Add restart policy for debugging
     restartPolicy: Always
