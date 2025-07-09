@@ -4,8 +4,14 @@ metadata:
   name: asa-server
   namespace: asa-server
 spec:
-  interval: 1h
+  interval: 5m  # Check for changes every 5 minutes instead of 1 hour
   # suspend: true  # Uncomment to completely disable this HelmRelease
+  # Upgrade settings for faster deployments
+  upgrade:
+    remediation:
+      retries: 3
+    cleanupOnFail: true
+    force: false  # Set to true for faster upgrades (forces pod replacement)
   chart:
     spec:
       chart: charts/asa-server
@@ -127,10 +133,13 @@ spec:
     # Backup configuration
     backup:
       enabled: true
-      schedule: "0 3 * * *"  # Daily at 3 AM
-      retention: 7
+      hostPath: "/run/desktop/mnt/host/d/ark-backups"
+      schedule:
+        enabled: true  # Enable scheduled backups
+        cron: "0 3 * * *"  # Daily at 3 AM
+        retention: 7  # Keep last 7 backups
       persistence:
-        enabled: true
+        enabled: false  # Use hostPath, not PVC for backups
         size: 20Gi
         storageClass: "hostpath"
         accessModes:
