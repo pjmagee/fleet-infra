@@ -45,8 +45,8 @@ spec:
       # Mods - start with popular ones (updated field name for Zerschranzer)
       modIDs: ""  # No mods for debugging
       
-      # Custom start parameters (Zerschranzer format)
-      customStartParameters: "-NoBattlEye -crossplay -NoHangDetection -ForceAllowCaveFlyers -PreventHibernation"
+      # Custom start parameters (ASA-valid arguments only)
+      customStartParameters: "-NoBattlEye -ServerPlatform=PC  -NoHangDetection -ForceAllowCaveFlyers"
     
     # Use hostPort for external access
     hostPort:

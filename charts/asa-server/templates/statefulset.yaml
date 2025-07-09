@@ -105,13 +105,29 @@ spec:
           command: ["/bin/bash", "-c"]
           args:
             - |
-              echo ">>> Setting up permissions..."
+              echo ">>> Setting up permissions and machine-id..."
               
               # Create required directories
               mkdir -p /ark/binaries /ark/instance
               
               # Create required ARK server directory structure
               mkdir -p /ark/binaries/ShooterGame/Saved/Config/WindowsServer
+              
+              # Generate machine-id if it doesn't exist
+              if [ ! -f /ark/instance/machine-id ]; then
+                  # Generate a machine-id using available tools
+                  if command -v dbus-uuidgen >/dev/null 2>&1; then
+                      dbus-uuidgen | tr -d '\n' > /ark/instance/machine-id
+                  elif [ -f /proc/sys/kernel/random/uuid ]; then
+                      cat /proc/sys/kernel/random/uuid | tr -d '-\n' > /ark/instance/machine-id
+                  else
+                      # Fallback: generate from /dev/urandom
+                      head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n' > /ark/instance/machine-id
+                  fi
+                  echo ">>> Generated new machine-id: $(cat /ark/instance/machine-id)"
+              else
+                  echo ">>> Using existing machine-id: $(cat /ark/instance/machine-id)"
+              fi
               
               # Set ownership to steam user (1000:121)
               chown -R 1000:121 /ark/binaries /ark/instance
@@ -145,31 +161,35 @@ spec:
           command: ["/bin/bash", "-c"]
           args: 
             - |
-              # Set up machine-id for SteamCMD
+              # Set up machine-id for SteamCMD (required for ARK server)
               if [ -f /ark/instance/machine-id ]; then
+                  MACHINE_ID_CONTENT=$(cat /ark/instance/machine-id)
+                  echo ">>> Found machine-id: $MACHINE_ID_CONTENT"
+                  
                   # Try to set machine-id in /etc/machine-id
                   if cp /ark/instance/machine-id /etc/machine-id 2>/dev/null; then
                       chmod 444 /etc/machine-id
-                      echo ">>> Machine-id set in /etc/machine-id: $(cat /etc/machine-id)"
+                      echo ">>> Machine-id successfully set in /etc/machine-id"
                   else
                       echo ">>> Warning: Could not set /etc/machine-id (filesystem restrictions)"
                       echo ">>> Using MACHINE_ID environment variable instead"
-                      export MACHINE_ID=$(cat /ark/instance/machine-id)
-                      echo ">>> Machine-id set as environment variable: $MACHINE_ID"
+                      export MACHINE_ID="$MACHINE_ID_CONTENT"
                   fi
               else
-                  echo ">>> Warning: machine-id file not found in /ark/instance/"
+                  echo ">>> ERROR: machine-id file not found in /ark/instance/"
+                  echo ">>> This will cause SteamCMD to fail. Check init container logs."
+                  exit 1
               fi
               
-              # Start ARK server
+              # Start ARK server with ASA-valid arguments only
               {{- if .Values.onePassword.enabled }}
               # Use environment variables from 1Password secret
               exec /entrypoint.sh run \
-                "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword=${serverPassword}?RCONEnabled=True?ServerAdminPassword=${adminPassword}?AltSaveDirectoryName={{ .Values.server.saveDir }}" \
+                "{{ .Values.server.mapName }}?SessionName={{ .Values.server.serverName }}?ServerPassword=$serverPassword?RCONEnabled=True?ServerAdminPassword=$adminPassword?AltSaveDirectoryName={{ .Values.server.saveDir }}" \
               {{- else }}
               # Use values from release configuration
               exec /entrypoint.sh run \
-                "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}" \
+                "{{ .Values.server.mapName }}?SessionName={{ .Values.server.serverName }}?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}" \
               {{- end }}
                 {{- if .Values.server.customStartParameters }}
                 {{- range (split " " .Values.server.customStartParameters) }}
@@ -179,18 +199,12 @@ spec:
                 {{- end }}
                 {{- end }}
                 "-WinLiveMaxPlayers={{ .Values.server.maxPlayers }}" \
-                "-Port={{ .Values.server.ports.game }}" \
+                "-port={{ .Values.server.ports.game }}" \
                 "-QueryPort={{ .Values.server.ports.query }}" \
                 "-RCONPort={{ .Values.server.ports.rcon }}" \
-                "-game" \
                 {{- if .Values.server.clusterID }}
                 "-ClusterDirOverride=/ark/cluster" \
                 "-ClusterId={{ .Values.server.clusterID }}" \
-                {{- end }}
-                "-server" \
-                "-log" \
-                {{- if .Values.server.modIDs }}
-                "-mods={{ .Values.server.modIDs }}" \
                 {{- end }}
           ports:
             - name: game-tcp

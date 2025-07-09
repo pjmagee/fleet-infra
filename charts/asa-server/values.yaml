@@ -39,8 +39,8 @@ server:
     query: 7778     # QueryPort (typically game port + 1)
     rcon: 27020     # RCONPort
   
-  # Mods
-  modIDs: ""  # Comma-separated mod IDs
+  # Mods (ASA uses GameUserSettings.ini, not command-line)
+  modIDs: ""  # Comma-separated mod IDs for ActiveMods in GameUserSettings.ini
   
   # Cluster settings
   clusterID: ""  # Leave empty if not using clustering

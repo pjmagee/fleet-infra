@@ -38,4 +38,9 @@ data:
     ShowMapPlayerLocation=true
     EnablePVPGamma=true
     
+    {{- if .Values.server.modIDs }}
+    # Mod configuration for ASA
+    ActiveMods={{ .Values.server.modIDs }}
+    {{- end }}
+    
     # Custom settings can be added here
