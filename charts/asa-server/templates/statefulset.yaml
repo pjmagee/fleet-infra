@@ -150,11 +150,7 @@ spec:
       containers:
         - name: {{ .Chart.Name }}
           securityContext:
-            runAsUser: 0  # Run as root to allow writing to /etc/machine-id
-            runAsGroup: 0
-            allowPrivilegeEscalation: true
-            readOnlyRootFilesystem: false
-            runAsNonRoot: false
+            {{- toYaml .Values.securityContext | nindent 12 }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           # Command to set up machine-id and start ARK server
@@ -166,15 +162,9 @@ spec:
                   MACHINE_ID_CONTENT=$(cat /ark/instance/machine-id)
                   echo ">>> Found machine-id: $MACHINE_ID_CONTENT"
                   
-                  # Try to set machine-id in /etc/machine-id
-                  if cp /ark/instance/machine-id /etc/machine-id 2>/dev/null; then
-                      chmod 444 /etc/machine-id
-                      echo ">>> Machine-id successfully set in /etc/machine-id"
-                  else
-                      echo ">>> Warning: Could not set /etc/machine-id (filesystem restrictions)"
-                      echo ">>> Using MACHINE_ID environment variable instead"
-                      export MACHINE_ID="$MACHINE_ID_CONTENT"
-                  fi
+                  # Since we're running as non-root, use environment variable for machine-id
+                  export MACHINE_ID="$MACHINE_ID_CONTENT"
+                  echo ">>> Using MACHINE_ID environment variable for SteamCMD"
               else
                   echo ">>> ERROR: machine-id file not found in /ark/instance/"
                   echo ">>> This will cause SteamCMD to fail. Check init container logs."
