@@ -1,0 +1,83 @@
+{{- if .Values.management.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "asa-server.fullname" . }}-manager
+  labels:
+    {{- include "asa-server.labels" . | nindent 4 }}
+    app.kubernetes.io/component: manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "asa-server.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: manager
+  template:
+    metadata:
+      labels:
+        {{- include "asa-server.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: manager
+    spec:
+      containers:
+      - name: manager
+        image: "{{ .Values.management.image.repository }}:{{ .Values.management.image.tag }}"
+        imagePullPolicy: {{ .Values.management.image.pullPolicy }}
+        command: ["/bin/bash", "-c"]
+        args:
+          - |
+            echo ">>> ARK Server Manager starting..."
+            
+            # Install management tools
+            apt-get update && apt-get install -y \
+              curl \
+              jq \
+              rcon-cli \
+              netcat-openbsd
+            
+            # Create management scripts
+            cat > /usr/local/bin/ark-status << 'EOF'
+            #!/bin/bash
+            echo "=== ARK Server Status ==="
+            if kubectl get pods -l app.kubernetes.io/name={{ include "asa-server.name" . }} -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running; then
+                echo "Server: RUNNING"
+                echo "Players: $(rcon-cli -H localhost -p {{ .Values.server.ports.rcon }} -P $RCON_PASSWORD listplayers 2>/dev/null | wc -l || echo 'Unknown')"
+            else
+                echo "Server: STOPPED"
+            fi
+            EOF
+            
+            cat > /usr/local/bin/ark-backup << 'EOF'
+            #!/bin/bash
+            echo "=== Manual ARK Backup ==="
+            kubectl create job {{ include "asa-server.fullname" . }}-backup-manual-$(date +%s) \
+              --from=cronjob/{{ include "asa-server.fullname" . }}-backup
+            EOF
+            
+            cat > /usr/local/bin/ark-players << 'EOF'
+            #!/bin/bash
+            echo "=== Online Players ==="
+            rcon-cli -H localhost -p {{ .Values.server.ports.rcon }} -P $RCON_PASSWORD listplayers
+            EOF
+            
+            chmod +x /usr/local/bin/ark-*
+            
+            # Keep container running
+            tail -f /dev/null
+        env:
+          - name: RCON_PASSWORD
+            valueFrom:
+              secretRef:
+                name: {{ include "asa-server.fullname" . }}-secret
+                key: adminPassword
+        ports:
+          - name: ssh
+            containerPort: 22
+        volumeMounts:
+          - name: manager-scripts
+            mountPath: /scripts
+      volumes:
+        - name: manager-scripts
+          configMap:
+            name: {{ include "asa-server.fullname" . }}-manager-scripts
+            defaultMode: 0755
+{{- end }}

@@ -1,0 +1,71 @@
+{{- if .Values.backup.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "asa-server.fullname" . }}-backup-{{ now | date "20060102-150405" }}
+  labels:
+    {{- include "asa-server.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backup
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "asa-server.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backup
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: backup
+          image: alpine:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              apk add --no-cache tar gzip
+              
+              BACKUP_DATE=$(date +"%Y%m%d-%H%M%S")
+              BACKUP_DIR="/host-backups/ark-server-backup-${BACKUP_DATE}"
+              
+              echo "Creating backup directory: ${BACKUP_DIR}"
+              mkdir -p "${BACKUP_DIR}"
+              
+              echo "Backing up ARK instance data..."
+              tar -czf "${BACKUP_DIR}/ark-instance.tar.gz" -C /ark/instance .
+              
+              echo "Backing up ARK binaries (server files)..."
+              tar -czf "${BACKUP_DIR}/ark-binaries.tar.gz" -C /ark/binaries .
+              
+              echo "Creating backup manifest..."
+              cat > "${BACKUP_DIR}/backup-info.txt" << EOF
+              Backup Date: $(date)
+              Server Name: {{ .Values.server.serverName }}
+              Map: {{ .Values.server.mapName }}
+              Save Directory: {{ .Values.server.saveDir }}
+              Backup Contents:
+              - ark-instance.tar.gz (saves, configs, logs)
+              - ark-binaries.tar.gz (server files, mods)
+              EOF
+              
+              echo "Backup completed successfully!"
+              echo "Backup location: ${BACKUP_DIR}"
+              ls -la "${BACKUP_DIR}"
+          volumeMounts:
+            - name: ark-instance
+              mountPath: /ark/instance
+              readOnly: true
+            - name: ark-binaries  
+              mountPath: /ark/binaries
+              readOnly: true
+            - name: host-backup-dir
+              mountPath: /host-backups
+      volumes:
+        - name: ark-instance
+          persistentVolumeClaim:
+            claimName: ark-instance-{{ include "asa-server.fullname" . }}-0
+        - name: ark-binaries
+          persistentVolumeClaim:
+            claimName: ark-binaries-{{ include "asa-server.fullname" . }}-0
+        - name: host-backup-dir
+          hostPath:
+            path: {{ .Values.backup.hostPath | default "/run/desktop/mnt/host/d/ark-backups" }}
+            type: DirectoryOrCreate
+{{- end }}

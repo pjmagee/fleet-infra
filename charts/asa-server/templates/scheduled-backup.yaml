@@ -1,0 +1,96 @@
+{{- if .Values.backup.schedule.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "asa-server.fullname" . }}-scheduled-backup
+  labels:
+    {{- include "asa-server.labels" . | nindent 4 }}
+    app.kubernetes.io/component: scheduled-backup
+spec:
+  schedule: {{ .Values.backup.schedule.cron | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "asa-server.selectorLabels" . | nindent 12 }}
+            app.kubernetes.io/component: scheduled-backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: scheduled-backup
+              image: alpine:latest
+              command: ["/bin/sh", "-c"]
+              args:
+                - |
+                  apk add --no-cache tar gzip
+                  
+                  BACKUP_DATE=$(date +"%Y%m%d-%H%M%S")
+                  BACKUP_DIR="/host-backups/scheduled/ark-server-${BACKUP_DATE}"
+                  
+                  echo "=== ARK Server Scheduled Backup Started ==="
+                  echo "Backup Date: $(date)"
+                  echo "Backup Directory: ${BACKUP_DIR}"
+                  
+                  mkdir -p "${BACKUP_DIR}"
+                  
+                  # Create a pre-backup server announcement (if RCON available)
+                  echo "Creating backup announcement..."
+                  
+                  echo "Backing up instance data..."
+                  tar -czf "${BACKUP_DIR}/ark-instance.tar.gz" -C /ark/instance . \
+                    --exclude='*.tmp' --exclude='*.lock' --exclude='proton-logs/*'
+                  
+                  echo "Backing up server binaries..."
+                  tar -czf "${BACKUP_DIR}/ark-binaries.tar.gz" -C /ark/binaries . \
+                    --exclude='steamapps/downloading/*' --exclude='steamapps/temp/*'
+                  
+                  # Create backup metadata
+                  cat > "${BACKUP_DIR}/backup-metadata.json" << EOF
+                  {
+                    "backupDate": "$(date -Iseconds)",
+                    "backupType": "scheduled",
+                    "serverName": "{{ .Values.server.serverName }}",
+                    "mapName": "{{ .Values.server.mapName }}",
+                    "saveDir": "{{ .Values.server.saveDir }}",
+                    "files": {
+                      "instance": "ark-instance.tar.gz",
+                      "binaries": "ark-binaries.tar.gz"
+                    },
+                    "sizes": {
+                      "instance": "$(du -h ${BACKUP_DIR}/ark-instance.tar.gz | cut -f1)",
+                      "binaries": "$(du -h ${BACKUP_DIR}/ark-binaries.tar.gz | cut -f1)"
+                    }
+                  }
+                  EOF
+                  
+                  echo "=== Backup Summary ==="
+                  cat "${BACKUP_DIR}/backup-metadata.json"
+                  echo "=== Backup Completed Successfully ==="
+                  
+                  # Cleanup old backups (keep last {{ .Values.backup.schedule.retention }} backups)
+                  echo "Cleaning up old backups..."
+                  cd /host-backups/scheduled
+                  ls -t ark-server-* | tail -n +{{ add .Values.backup.schedule.retention 1 }} | xargs -r rm -rf
+                  echo "Cleanup completed."
+              volumeMounts:
+                - name: ark-instance
+                  mountPath: /ark/instance
+                  readOnly: true
+                - name: ark-binaries  
+                  mountPath: /ark/binaries
+                  readOnly: true
+                - name: host-backup-dir
+                  mountPath: /host-backups
+          volumes:
+            - name: ark-instance
+              persistentVolumeClaim:
+                claimName: ark-instance-{{ include "asa-server.fullname" . }}-0
+            - name: ark-binaries
+              persistentVolumeClaim:
+                claimName: ark-binaries-{{ include "asa-server.fullname" . }}-0
+            - name: host-backup-dir
+              hostPath:
+                path: {{ .Values.backup.hostPath | default "/run/desktop/mnt/host/d/ark-backups" }}
+                type: DirectoryOrCreate
+{{- end }}

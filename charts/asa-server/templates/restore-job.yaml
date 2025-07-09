@@ -1,0 +1,92 @@
+{{- if .Values.restore.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "asa-server.fullname" . }}-restore-{{ now | date "20060102-150405" }}
+  labels:
+    {{- include "asa-server.labels" . | nindent 4 }}
+    app.kubernetes.io/component: restore
+spec:
+  template:
+    metadata:
+      labels:
+        {{- include "asa-server.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: restore
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: restore
+          image: alpine:latest
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              apk add --no-cache tar gzip
+              
+              RESTORE_PATH="/host-restore/{{ .Values.restore.backupName }}"
+              
+              if [ ! -d "${RESTORE_PATH}" ]; then
+                echo "ERROR: Backup directory not found: ${RESTORE_PATH}"
+                echo "Available backups:"
+                ls -la /host-restore/
+                exit 1
+              fi
+              
+              echo "Found backup directory: ${RESTORE_PATH}"
+              echo "Backup contents:"
+              ls -la "${RESTORE_PATH}"
+              
+              # Stop any existing server processes (if running)
+              echo "Preparing for restore..."
+              
+              {{- if .Values.restore.restoreInstance }}
+              if [ -f "${RESTORE_PATH}/ark-instance.tar.gz" ]; then
+                echo "Restoring ARK instance data..."
+                rm -rf /ark/instance/*
+                tar -xzf "${RESTORE_PATH}/ark-instance.tar.gz" -C /ark/instance
+                echo "Instance data restored successfully!"
+              else
+                echo "WARNING: ark-instance.tar.gz not found in backup"
+              fi
+              {{- end }}
+              
+              {{- if .Values.restore.restoreBinaries }}
+              if [ -f "${RESTORE_PATH}/ark-binaries.tar.gz" ]; then
+                echo "Restoring ARK server binaries..."
+                rm -rf /ark/binaries/*
+                tar -xzf "${RESTORE_PATH}/ark-binaries.tar.gz" -C /ark/binaries
+                echo "Server binaries restored successfully!"
+              else
+                echo "WARNING: ark-binaries.tar.gz not found in backup"
+              fi
+              {{- end }}
+              
+              # Fix permissions
+              echo "Fixing permissions..."
+              chown -R 1000:121 /ark/instance /ark/binaries 2>/dev/null || true
+              chmod -R 775 /ark/instance /ark/binaries 2>/dev/null || true
+              
+              echo "Restore completed successfully!"
+              echo "Server should be restarted to load the restored data."
+          securityContext:
+            runAsUser: 0  # Need root for chown operations
+            runAsGroup: 0
+          volumeMounts:
+            - name: ark-instance
+              mountPath: /ark/instance
+            - name: ark-binaries  
+              mountPath: /ark/binaries
+            - name: host-restore-dir
+              mountPath: /host-restore
+              readOnly: true
+      volumes:
+        - name: ark-instance
+          persistentVolumeClaim:
+            claimName: ark-instance-{{ include "asa-server.fullname" . }}-0
+        - name: ark-binaries
+          persistentVolumeClaim:
+            claimName: ark-binaries-{{ include "asa-server.fullname" . }}-0
+        - name: host-restore-dir
+          hostPath:
+            path: {{ .Values.restore.hostPath | default "/run/desktop/mnt/host/d/ark-backups" }}
+            type: Directory
+{{- end }}

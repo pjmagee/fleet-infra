@@ -5,6 +5,7 @@ metadata:
   namespace: asa-server
 spec:
   interval: 1h
+  # suspend: true  # Uncomment to completely disable this HelmRelease
   chart:
     spec:
       chart: charts/asa-server
@@ -14,6 +15,9 @@ spec:
         name: flux-system
         namespace: flux-system
   values:
+    # Replica control - set to 0 to shutdown server
+    replicaCount: 1  # Set to 0 to stop server, 1 to start server
+    
     # Image configuration - use locally built image
     image:
       repository: zerschranzer/ark-ascended-base
@@ -119,3 +123,19 @@ spec:
       itemPath: "vaults/gdthxvzzghri27b3o2dq37rv4u/items/a7eya6ujzbgck5if5q7c5yz7ge"
       adminPasswordKey: "adminPassword"
       serverPasswordKey: "serverPassword"
+
+    # Backup configuration
+    backup:
+      enabled: true
+      schedule: "0 3 * * *"  # Daily at 3 AM
+      retention: 7
+      persistence:
+        enabled: true
+        size: 20Gi
+        storageClass: "hostpath"
+        accessModes:
+          - ReadWriteOnce
+
+    # Management tools
+    management:
+      enabled: true

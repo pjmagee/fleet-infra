@@ -1,0 +1,82 @@
+{{- if .Values.backup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "asa-server.fullname" . }}-backup
+  labels:
+    {{- include "asa-server.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: {{ include "asa-server.name" . }}-backup
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: backup
+            image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+            imagePullPolicy: {{ .Values.image.pullPolicy }}
+            command: ["/bin/bash", "-c"]
+            args:
+              - |
+                echo ">>> Starting ARK server backup at $(date)"
+                
+                # Create backup directory with timestamp
+                BACKUP_DIR="/backups/$(date +%Y-%m-%d_%H-%M-%S)"
+                mkdir -p "$BACKUP_DIR"
+                
+                # Backup save files
+                if [ -d "/ark/binaries/ShooterGame/Saved" ]; then
+                    echo ">>> Backing up save files..."
+                    tar -czf "$BACKUP_DIR/saves.tar.gz" -C /ark/binaries/ShooterGame/Saved .
+                    echo ">>> Save files backed up to $BACKUP_DIR/saves.tar.gz"
+                fi
+                
+                # Backup configuration
+                if [ -d "/ark/instance" ]; then
+                    echo ">>> Backing up configuration..."
+                    tar -czf "$BACKUP_DIR/config.tar.gz" -C /ark/instance .
+                    echo ">>> Configuration backed up to $BACKUP_DIR/config.tar.gz"
+                fi
+                
+                # Cleanup old backups (keep last 7 days)
+                echo ">>> Cleaning up old backups..."
+                find /backups -type d -mtime +7 -exec rm -rf {} + 2>/dev/null || true
+                
+                echo ">>> Backup completed at $(date)"
+                ls -la "$BACKUP_DIR"
+            volumeMounts:
+              - name: ark-binaries
+                mountPath: /ark/binaries
+                readOnly: true
+              - name: ark-instance
+                mountPath: /ark/instance
+                readOnly: true
+              - name: backup-storage
+                mountPath: /backups
+            env:
+              - name: TZ
+                value: {{ .Values.timezone | default "UTC" | quote }}
+          volumes:
+            - name: ark-binaries
+              persistentVolumeClaim:
+                claimName: ark-binaries-{{ include "asa-server.fullname" . }}-0
+            - name: ark-instance
+              persistentVolumeClaim:
+                claimName: ark-instance-{{ include "asa-server.fullname" . }}-0
+            - name: backup-storage
+              {{- if .Values.backup.persistence.enabled }}
+              persistentVolumeClaim:
+                claimName: {{ include "asa-server.fullname" . }}-backups
+              {{- else }}
+              hostPath:
+                path: {{ .Values.backup.hostPath | default "/run/desktop/mnt/host/d/ark-backups" }}
+                type: DirectoryOrCreate
+              {{- end }}
+{{- end }}
