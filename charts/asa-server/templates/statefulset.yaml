@@ -147,20 +147,30 @@ spec:
             - |
               # Set up machine-id for SteamCMD
               if [ -f /ark/instance/machine-id ]; then
-                  cp /ark/instance/machine-id /etc/machine-id
-                  chmod 444 /etc/machine-id
-                  echo ">>> Machine-id set: $(cat /etc/machine-id)"
+                  # Try to set machine-id in /etc/machine-id
+                  if cp /ark/instance/machine-id /etc/machine-id 2>/dev/null; then
+                      chmod 444 /etc/machine-id
+                      echo ">>> Machine-id set in /etc/machine-id: $(cat /etc/machine-id)"
+                  else
+                      echo ">>> Warning: Could not set /etc/machine-id (filesystem restrictions)"
+                      echo ">>> Using MACHINE_ID environment variable instead"
+                      export MACHINE_ID=$(cat /ark/instance/machine-id)
+                      echo ">>> Machine-id set as environment variable: $MACHINE_ID"
+                  fi
               else
-                  echo ">>> Warning: machine-id file not found"
+                  echo ">>> Warning: machine-id file not found in /ark/instance/"
               fi
               
               # Start ARK server
+              {{- if .Values.onePassword.enabled }}
+              # Use environment variables from 1Password secret
               exec /entrypoint.sh run \
-                {{- if .Values.onePassword.enabled }}
                 "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword=${serverPassword}?RCONEnabled=True?ServerAdminPassword=${adminPassword}?AltSaveDirectoryName={{ .Values.server.saveDir }}" \
-                {{- else }}
+              {{- else }}
+              # Use values from release configuration
+              exec /entrypoint.sh run \
                 "{{ .Values.server.mapName }}?listen?SessionName={{ .Values.server.serverName }}?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}" \
-                {{- end }}
+              {{- end }}
                 {{- if .Values.server.customStartParameters }}
                 {{- range (split " " .Values.server.customStartParameters) }}
                 {{- if . }}
