@@ -66,7 +66,7 @@ spec:
         env:
           - name: RCON_PASSWORD
             valueFrom:
-              secretRef:
+              secretKeyRef:
                 name: {{ include "asa-server.fullname" . }}-secret
                 key: adminPassword
         ports:
@@ -78,6 +78,6 @@ spec:
       volumes:
         - name: manager-scripts
           configMap:
-            name: {{ include "asa-server.fullname" . }}-manager-scripts
+            name: {{ include "asa-server.fullname" . }}-scripts
             defaultMode: 0755
 {{- end }}
