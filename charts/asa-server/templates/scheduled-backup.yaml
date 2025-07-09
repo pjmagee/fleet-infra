@@ -1,4 +1,4 @@
-{{- if .Values.backup.schedule.enabled }}
+{{- if and .Values.backup.enabled .Values.backup.schedule.enabled }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -8,6 +8,9 @@ metadata:
     app.kubernetes.io/component: scheduled-backup
 spec:
   schedule: {{ .Values.backup.schedule.cron | quote }}
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
   jobTemplate:
     spec:
       template:
@@ -73,6 +76,9 @@ spec:
                   cd /host-backups/scheduled
                   ls -t ark-server-* | tail -n +{{ add .Values.backup.schedule.retention 1 }} | xargs -r rm -rf
                   echo "Cleanup completed."
+              env:
+                - name: TZ
+                  value: {{ .Values.timezone | default "UTC" | quote }}
               volumeMounts:
                 - name: ark-instance
                   mountPath: /ark/instance
