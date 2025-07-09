@@ -11,17 +11,37 @@ spec:
       targetPort: game-tcp
       protocol: TCP
       name: game-tcp
+      {{- if eq .Values.service.type "NodePort" }}
+      {{- if .Values.service.nodePorts.game }}
+      nodePort: {{ .Values.service.nodePorts.game }}
+      {{- end }}
+      {{- end }}
     - port: {{ .Values.server.ports.game }}
       targetPort: game-udp
       protocol: UDP
       name: game-udp
+      {{- if eq .Values.service.type "NodePort" }}
+      {{- if .Values.service.nodePorts.game }}
+      nodePort: {{ .Values.service.nodePorts.game }}
+      {{- end }}
+      {{- end }}
     - port: {{ .Values.server.ports.query }}
       targetPort: query-udp
       protocol: UDP
       name: query-udp
+      {{- if eq .Values.service.type "NodePort" }}
+      {{- if .Values.service.nodePorts.query }}
+      nodePort: {{ .Values.service.nodePorts.query }}
+      {{- end }}
+      {{- end }}
     - port: {{ .Values.server.ports.rcon }}
       targetPort: rcon
       protocol: TCP
       name: rcon
+      {{- if eq .Values.service.type "NodePort" }}
+      {{- if .Values.service.nodePorts.rcon }}
+      nodePort: {{ .Values.service.nodePorts.rcon }}
+      {{- end }}
+      {{- end }}
   selector:
     {{- include "asa-server.selectorLabels" . | nindent 4 }}

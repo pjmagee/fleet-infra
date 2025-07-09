@@ -91,8 +91,14 @@ persistence:
 
 # Service configuration
 service:
-  type: ClusterIP
-  # Note: Ports are now defined in server.ports section
+  type: NodePort
+  # NodePort configuration - ports will be auto-assigned or can be specified
+  # Valid NodePort range: 30000-32767
+  nodePorts:
+    game: ""      # Auto-assign if empty, or specify port (e.g., 30777)
+    query: ""     # Auto-assign if empty, or specify port (e.g., 30778) 
+    rcon: ""      # Auto-assign if empty, or specify port (e.g., 30020)
+  # Note: Internal ports are defined in server.ports section
 
 # Use hostPort for local development (Docker Desktop)
 hostPort:

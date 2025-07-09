@@ -34,10 +34,10 @@ data:
     ResourcesRespawnPeriodMultiplier=1.0
     
     # Quality of life settings
-    AllowFlyerCarryPvE=true
-    ShowMapPlayerLocation=true
-    EnablePVPGamma=true
-    
+    AllowFlyerCarryPvE=True
+    ShowMapPlayerLocation=True
+    EnablePVPGamma=True
+
     {{- if .Values.server.modIDs }}
     # Mod configuration for ASA
     ActiveMods={{ .Values.server.modIDs }}

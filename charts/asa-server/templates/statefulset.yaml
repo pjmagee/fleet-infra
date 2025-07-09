@@ -200,27 +200,15 @@ spec:
             - name: game-tcp
               containerPort: {{ .Values.server.ports.game }}
               protocol: TCP
-              {{- if .Values.hostPort.enabled }}
-              hostPort: {{ .Values.server.ports.game }}
-              {{- end }}
             - name: game-udp
               containerPort: {{ .Values.server.ports.game }}
               protocol: UDP
-              {{- if .Values.hostPort.enabled }}
-              hostPort: {{ .Values.server.ports.game }}
-              {{- end }}
             - name: query-udp
               containerPort: {{ .Values.server.ports.query }}
               protocol: UDP
-              {{- if .Values.hostPort.enabled }}
-              hostPort: {{ .Values.server.ports.query }}
-              {{- end }}
             - name: rcon
               containerPort: {{ .Values.server.ports.rcon }}
               protocol: TCP
-              {{- if .Values.hostPort.enabled }}
-              hostPort: {{ .Values.server.ports.rcon }}
-              {{- end }}
           env:
             # Timezone
             - name: TZ

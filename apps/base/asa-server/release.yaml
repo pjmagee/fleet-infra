@@ -18,16 +18,10 @@ spec:
     image:
       repository: zerschranzer/ark-ascended-base
       tag: "latest"
-      pullPolicy: Never  # Use local image, don't pull from registry
-    
-    # Update configuration - enable to download ARK server files
+      pullPolicy: Never
     update:
-      enabled: true  # Enable to download ARK server files
-    
-    # Timezone for the container
+      enabled: true
     timezone: "Europe/London"
-    
-    # Server Settings - private server for friends (Zerschranzer format)
     server:
       mapName: "Ragnarok_WP"  # Ragnarok - Norse-themed map with ruins, longhouses, and hot springs
       serverName: "RagnarokAdventures"  # No spaces - ARK can have issues with spaces in server names
@@ -36,24 +30,15 @@ spec:
       maxPlayers: 10  # Good size for friends group
       saveDir: "ragnarokasa"  # Unique save directory name
       
-      # Standard ports  
       ports:
         game: 7777
-        query: 7778  # Updated to match Zerschranzer default (game port + 1)
+        query: 7778
         rcon: 27020
-      
-      # Mods - start with popular ones (updated field name for Zerschranzer)
       modIDs: ""  # No mods for debugging
-      
-      # Custom start parameters (ASA-valid arguments only)
       customStartParameters: "-NoBattlEye -ServerPlatform=PC  -NoHangDetection -ForceAllowCaveFlyers"
-    
-    # Use hostPort for external access
+    # Disable hostPort since we're using NodePort service
     hostPort:
-      enabled: true
-    
-    # Resource limits - Following Zerschranzer documentation (minimum 16Gi RAM)
-    # Increased CPU for ARK Ascended startup requirements
+      enabled: false
     resources:
       limits:
         cpu: 8
@@ -62,7 +47,6 @@ spec:
         cpu: 4
         memory: 16Gi
     
-    # Persistence configuration - use PVC to avoid Docker Desktop permission issues
     persistence:
       enabled: true  # Enable persistence for server files
       type: pvc  # Use PVC to avoid hostPath permission issues on Docker Desktop
@@ -94,6 +78,11 @@ spec:
     # Service configuration - use NodePort for external access
     service:
       type: NodePort
+      # Optionally specify NodePort numbers (auto-assigned if not specified)
+      nodePorts:
+        game: 30777    # External port for ARK game traffic (TCP/UDP)
+        query: 30778   # External port for ARK query traffic (UDP)
+        rcon: 30020    # External port for RCON access (TCP)
     
     # Add restart policy for debugging
     restartPolicy: Always
