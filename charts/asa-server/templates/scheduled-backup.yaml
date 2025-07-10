@@ -34,19 +34,47 @@ spec:
                   echo "=== ARK Server Scheduled Backup Started ==="
                   echo "Backup Date: $(date)"
                   echo "Backup Directory: ${BACKUP_DIR}"
-                  
                   mkdir -p "${BACKUP_DIR}"
                   
-                  # Create a pre-backup server announcement (if RCON available)
-                  echo "Creating backup announcement..."
+                  # Backup 1: ARK Saves (world data, player data, etc.)
+                  echo "Backing up ARK saves..."
+                  if [ -d "/ark/binaries/ShooterGame/Saved" ]; then
+                      tar -czf "${BACKUP_DIR}/ark-saves.tar.gz" -C /ark/binaries/ShooterGame/Saved . \
+                        --exclude='*.tmp' --exclude='*.lock' --exclude='Logs/ShooterGame-backup-*'
+                      echo "Saves backup size: $(du -h ${BACKUP_DIR}/ark-saves.tar.gz | cut -f1)"
+                  else
+                      echo "WARNING: No saves directory found at /ark/binaries/ShooterGame/Saved"
+                  fi
                   
-                  echo "Backing up instance data..."
-                  tar -czf "${BACKUP_DIR}/ark-instance.tar.gz" -C /ark/instance . \
-                    --exclude='*.tmp' --exclude='*.lock' --exclude='proton-logs/*'
+                  # Backup 2: ARK Plugins/Mods (if any)
+                  echo "Backing up ARK plugins/mods..."
+                  if [ -d "/ark/binaries/ShooterGame/Plugins" ] && [ "$(ls -A /ark/binaries/ShooterGame/Plugins 2>/dev/null)" ]; then
+                      tar -czf "${BACKUP_DIR}/ark-plugins.tar.gz" -C /ark/binaries/ShooterGame/Plugins .
+                      echo "Plugins backup size: $(du -h ${BACKUP_DIR}/ark-plugins.tar.gz | cut -f1)"
+                  else
+                      echo "No plugins/mods found to backup"
+                      touch "${BACKUP_DIR}/no-plugins.txt"
+                  fi
                   
-                  echo "Backing up server binaries..."
-                  tar -czf "${BACKUP_DIR}/ark-binaries.tar.gz" -C /ark/binaries . \
-                    --exclude='steamapps/downloading/*' --exclude='steamapps/temp/*'
+                  # Backup 3: Configuration files (only if they have content)
+                  echo "Backing up configuration files..."
+                  mkdir -p "${BACKUP_DIR}/config"
+                  
+                  # Check for Game.ini with content
+                  if [ -f "/ark/instance/Game.ini" ] && [ -s "/ark/instance/Game.ini" ]; then
+                      cp "/ark/instance/Game.ini" "${BACKUP_DIR}/config/"
+                      echo "Game.ini backed up ($(wc -l < /ark/instance/Game.ini) lines)"
+                  else
+                      echo "Game.ini not found or empty"
+                  fi
+                  
+                  # Check for GameUserSettings.ini with content  
+                  if [ -f "/ark/instance/GameUserSettings.ini" ] && [ -s "/ark/instance/GameUserSettings.ini" ]; then
+                      cp "/ark/instance/GameUserSettings.ini" "${BACKUP_DIR}/config/"
+                      echo "GameUserSettings.ini backed up ($(wc -l < /ark/instance/GameUserSettings.ini) lines)"
+                  else
+                      echo "GameUserSettings.ini not found or empty"
+                  fi
                   
                   # Create backup metadata
                   cat > "${BACKUP_DIR}/backup-metadata.json" << EOF
@@ -57,12 +85,14 @@ spec:
                     "mapName": "{{ .Values.server.mapName }}",
                     "saveDir": "{{ .Values.server.saveDir }}",
                     "files": {
-                      "instance": "ark-instance.tar.gz",
-                      "binaries": "ark-binaries.tar.gz"
+                      "saves": "ark-saves.tar.gz",
+                      "plugins": "ark-plugins.tar.gz",
+                      "config": "config/"
                     },
                     "sizes": {
-                      "instance": "$(du -h ${BACKUP_DIR}/ark-instance.tar.gz | cut -f1)",
-                      "binaries": "$(du -h ${BACKUP_DIR}/ark-binaries.tar.gz | cut -f1)"
+                      "saves": "$(du -h ${BACKUP_DIR}/ark-saves.tar.gz 2>/dev/null | cut -f1 || echo 'N/A')",
+                      "plugins": "$(du -h ${BACKUP_DIR}/ark-plugins.tar.gz 2>/dev/null | cut -f1 || echo 'N/A')",
+                      "total": "$(du -sh ${BACKUP_DIR} | cut -f1)"
                     }
                   }
                   EOF

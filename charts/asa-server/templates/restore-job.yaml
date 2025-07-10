@@ -35,30 +35,79 @@ spec:
               echo "Backup contents:"
               ls -la "${RESTORE_PATH}"
               
-              # Stop any existing server processes (if running)
-              echo "Preparing for restore..."
-              
-              {{- if .Values.restore.restoreInstance }}
-              if [ -f "${RESTORE_PATH}/ark-instance.tar.gz" ]; then
-                echo "Restoring ARK instance data..."
-                rm -rf /ark/instance/*
-                tar -xzf "${RESTORE_PATH}/ark-instance.tar.gz" -C /ark/instance
-                echo "Instance data restored successfully!"
+              # Check if this is new format backup (with saves) or old format
+              if [ -f "${RESTORE_PATH}/ark-saves.tar.gz" ]; then
+                echo "Detected new backup format (saves-based)"
+                
+                # Restore ARK saves (most important)
+                echo "Restoring ARK saves..."
+                if [ -f "${RESTORE_PATH}/ark-saves.tar.gz" ]; then
+                  # Create the saves directory if it doesn't exist
+                  mkdir -p /ark/binaries/ShooterGame/Saved
+                  # Clear existing saves and restore
+                  rm -rf /ark/binaries/ShooterGame/Saved/*
+                  tar -xzf "${RESTORE_PATH}/ark-saves.tar.gz" -C /ark/binaries/ShooterGame/Saved
+                  echo "Saves restored successfully!"
+                else
+                  echo "WARNING: ark-saves.tar.gz not found in backup"
+                fi
+                
+                # Restore plugins/mods if available
+                if [ -f "${RESTORE_PATH}/ark-plugins.tar.gz" ]; then
+                  echo "Restoring ARK plugins/mods..."
+                  mkdir -p /ark/binaries/ShooterGame/Plugins
+                  rm -rf /ark/binaries/ShooterGame/Plugins/*
+                  tar -xzf "${RESTORE_PATH}/ark-plugins.tar.gz" -C /ark/binaries/ShooterGame/Plugins
+                  echo "Plugins/mods restored successfully!"
+                else
+                  echo "No plugins/mods to restore (normal if no mods installed)"
+                fi
+                
+                # Restore configuration files
+                if [ -d "${RESTORE_PATH}/config" ]; then
+                  echo "Restoring configuration files..."
+                  
+                  if [ -f "${RESTORE_PATH}/config/Game.ini" ]; then
+                    cp "${RESTORE_PATH}/config/Game.ini" /ark/instance/
+                    echo "Game.ini restored"
+                  fi
+                  
+                  if [ -f "${RESTORE_PATH}/config/GameUserSettings.ini" ]; then
+                    cp "${RESTORE_PATH}/config/GameUserSettings.ini" /ark/instance/
+                    echo "GameUserSettings.ini restored"
+                  fi
+                  
+                  echo "Configuration files restored successfully!"
+                else
+                  echo "No configuration files to restore"
+                fi
+                
               else
-                echo "WARNING: ark-instance.tar.gz not found in backup"
+                echo "Detected old backup format (full binaries/instance)"
+                
+                {{- if .Values.restore.restoreInstance }}
+                if [ -f "${RESTORE_PATH}/ark-instance.tar.gz" ]; then
+                  echo "Restoring ARK instance data..."
+                  rm -rf /ark/instance/*
+                  tar -xzf "${RESTORE_PATH}/ark-instance.tar.gz" -C /ark/instance
+                  echo "Instance data restored successfully!"
+                else
+                  echo "WARNING: ark-instance.tar.gz not found in backup"
+                fi
+                {{- end }}
+                
+                {{- if .Values.restore.restoreBinaries }}
+                if [ -f "${RESTORE_PATH}/ark-binaries.tar.gz" ]; then
+                  echo "WARNING: Restoring full binaries (old backup format)"
+                  echo "This will restore entire server files - may take a long time!"
+                  rm -rf /ark/binaries/*
+                  tar -xzf "${RESTORE_PATH}/ark-binaries.tar.gz" -C /ark/binaries
+                  echo "Server binaries restored successfully!"
+                else
+                  echo "WARNING: ark-binaries.tar.gz not found in backup"
+                fi
+                {{- end }}
               fi
-              {{- end }}
-              
-              {{- if .Values.restore.restoreBinaries }}
-              if [ -f "${RESTORE_PATH}/ark-binaries.tar.gz" ]; then
-                echo "Restoring ARK server binaries..."
-                rm -rf /ark/binaries/*
-                tar -xzf "${RESTORE_PATH}/ark-binaries.tar.gz" -C /ark/binaries
-                echo "Server binaries restored successfully!"
-              else
-                echo "WARNING: ark-binaries.tar.gz not found in backup"
-              fi
-              {{- end }}
               
               # Fix permissions
               echo "Fixing permissions..."

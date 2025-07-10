@@ -1,5 +1,22 @@
 # ARK Server Backup/Restore Guide
 
+## Backup Structure (Optimized for Essential Data)
+
+The backup system has been optimized to only backup essential data that cannot be re-downloaded:
+
+- **ARK Saves** (`ark-saves.tar.gz`): World data, player data, tribe data, structures - the most critical data
+- **ARK Plugins** (`ark-plugins.tar.gz`): Installed mods and plugins (if any)
+- **Config Files** (`config/`): Game.ini and GameUserSettings.ini (if customized)
+- **Metadata** (`backup-metadata.json`): Backup information and verification data
+
+**NOT backed up**: Server binaries, SteamCMD, and other downloadable files that can be re-downloaded during server startup.
+
+**Benefits**:
+- 90%+ smaller backup files (typically MB instead of GB)
+- Faster backup and restore operations
+- Reduced storage requirements
+- Only essential data is preserved
+
 ## Docker Desktop WSL Path Mapping
 
 Docker Desktop runs in WSL, so the paths are mapped as follows:
@@ -32,10 +49,15 @@ flux reconcile kustomization apps
 3. **The backup Job will run automatically and create:**
 ```
 D:\ark-backups\
-└── ark-server-backup-20250709-143022\
-    ├── ark-instance.tar.gz    # Save games, configs, logs
-    ├── ark-binaries.tar.gz    # Server files (large!)
-    └── backup-info.txt        # Backup metadata
+└── manual\
+    └── ark-server-backup-20250709-143022\
+        ├── ark-saves.tar.gz        # Save games, player data (essential)
+        ├── ark-plugins.tar.gz      # Mods/plugins (if any)
+        ├── config\
+        │   ├── Game.ini            # Game configuration
+        │   └── GameUserSettings.ini # Server settings
+        ├── backup-metadata.json    # Backup metadata
+        └── no-plugins.txt          # Created if no plugins to backup
 ```
 
 ## Scheduled Backups (Automatic daily backups)
@@ -55,6 +77,12 @@ backup:
 ```
 D:\ark-backups\scheduled\
 ├── ark-server-20250709-030000\
+│   ├── ark-saves.tar.gz        # Save games, player data
+│   ├── ark-plugins.tar.gz      # Mods/plugins (if any)
+│   ├── config\
+│   │   ├── Game.ini            # Game configuration
+│   │   └── GameUserSettings.ini # Server settings
+│   └── backup-metadata.json    # Backup metadata
 ├── ark-server-20250710-030000\
 └── ark-server-20250711-030000\
 ```
