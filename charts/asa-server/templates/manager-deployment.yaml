@@ -31,8 +31,14 @@ spec:
             apt-get update && apt-get install -y \
               curl \
               jq \
-              rcon-cli \
-              netcat-openbsd
+              netcat-openbsd \
+              wget
+            
+            # Install rcon-cli for ARK server management
+            wget -O /tmp/rcon-cli.tar.gz https://github.com/itzg/rcon-cli/releases/download/1.6.0/rcon-cli_1.6.0_linux_amd64.tar.gz
+            tar -xzf /tmp/rcon-cli.tar.gz -C /tmp
+            mv /tmp/rcon-cli /usr/local/bin/
+            chmod +x /usr/local/bin/rcon-cli
             
             # Create management scripts
             cat > /usr/local/bin/ark-status << 'EOF'
@@ -40,7 +46,7 @@ spec:
             echo "=== ARK Server Status ==="
             if kubectl get pods -l app.kubernetes.io/name={{ include "asa-server.name" . }} -o jsonpath='{.items[0].status.phase}' 2>/dev/null | grep -q Running; then
                 echo "Server: RUNNING"
-                echo "Players: $(rcon-cli -H localhost -p {{ .Values.server.ports.rcon }} -P $RCON_PASSWORD listplayers 2>/dev/null | wc -l || echo 'Unknown')"
+                echo "Players: $(rcon-cli --host localhost --port {{ .Values.server.ports.rcon }} --password $RCON_PASSWORD listplayers 2>/dev/null | wc -l || echo 'Unknown')"
             else
                 echo "Server: STOPPED"
             fi
@@ -56,7 +62,7 @@ spec:
             cat > /usr/local/bin/ark-players << 'EOF'
             #!/bin/bash
             echo "=== Online Players ==="
-            rcon-cli -H localhost -p {{ .Values.server.ports.rcon }} -P $RCON_PASSWORD listplayers
+            rcon-cli --host localhost --port {{ .Values.server.ports.rcon }} --password $RCON_PASSWORD listplayers
             EOF
             
             chmod +x /usr/local/bin/ark-*

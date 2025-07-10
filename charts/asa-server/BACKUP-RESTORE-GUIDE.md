@@ -142,15 +142,32 @@ kubectl cp asa-server-0:/ark/binaries/ShooterGame/Saved ./ark-saves -n asa-serve
 kubectl cp ./ark-saves asa-server-0:/ark/binaries/ShooterGame/Saved -n asa-server
 ```
 
-## Backup Contents
+## Backup Contents (Current Structure)
 
-- **ark-instance.tar.gz**: Instance-specific data
-  - Save games (.ark files)
-  - Configuration files (Game.ini, GameUserSettings.ini)
-  - Server logs
+The optimized backup now includes only essential data:
+
+- **ark-saves.tar.gz**: World saves from `/ark/binaries/ShooterGame/Saved/`
+  - World files (.ark files)
   - Player data
+  - Tribe data
+  - Structure data
+  
+- **ark-plugins.tar.gz**: Mods and plugins from `/ark/binaries/ShooterGame/Plugins/` (if any)
+  - Custom mods
+  - Plugin configurations
+  
+- **config/**: Server configuration files (only if customized)
+  - Game.ini (if contains custom settings)
+  - GameUserSettings.ini (if contains custom settings)
+  
+- **backup-metadata.json**: Backup information and verification
+  - Backup timestamp
+  - File sizes
+  - Server configuration at backup time
 
-- **ark-binaries.tar.gz**: Server installation (large)
-  - ARK server files
-  - Installed mods
-  - Steam compatibility data
+**Excluded from backup**:
+
+- Server binaries (Engine/, ShooterGame/Binaries/, etc.)
+- SteamCMD files
+- Steam compatibility data
+- Downloadable content that can be re-acquired

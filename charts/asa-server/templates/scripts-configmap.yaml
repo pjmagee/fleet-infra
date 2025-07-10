@@ -36,9 +36,9 @@ data:
     echo "=== Player Management ==="
     echo "Note: Use RCON for player commands:"
     echo "Example commands:"
-    echo "  rcon-cli -H localhost -p {{ .Values.server.ports.rcon }} -P \$ADMIN_PASSWORD listplayers"
-    echo "  rcon-cli -H localhost -p {{ .Values.server.ports.rcon }} -P \$ADMIN_PASSWORD broadcast 'Server restart in 5 minutes'"
-    echo "  rcon-cli -H localhost -p {{ .Values.server.ports.rcon }} -P \$ADMIN_PASSWORD saveworld"
+    echo "  rcon-cli --host localhost --port {{ .Values.server.ports.rcon }} --password \$ADMIN_PASSWORD listplayers"
+    echo "  rcon-cli --host localhost --port {{ .Values.server.ports.rcon }} --password \$ADMIN_PASSWORD broadcast 'Server restart in 5 minutes'"
+    echo "  rcon-cli --host localhost --port {{ .Values.server.ports.rcon }} --password \$ADMIN_PASSWORD saveworld"
 
   ark-logs.sh: |
     #!/bin/bash
