@@ -309,9 +309,6 @@ spec:
             - name: config
               mountPath: /ark/instance/GameUserSettings.ini
               subPath: GameUserSettings.ini
-            # Management scripts
-            - name: scripts
-              mountPath: /usr/local/bin/ark-scripts
             {{- if .Values.server.clusterID }}
             # Cluster data volume
             - name: ark-cluster
@@ -324,11 +321,6 @@ spec:
           configMap:
             name: {{ include "asa-server.fullname" . }}-config
             defaultMode: 0644
-        # Management scripts ConfigMap  
-        - name: scripts
-          configMap:
-            name: {{ include "asa-server.fullname" . }}-scripts
-            defaultMode: 0755
         {{- if .Values.server.clusterID }}
         # Cluster data volume (shared between clustered instances)
         - name: ark-cluster
