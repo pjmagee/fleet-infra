@@ -1,8 +1,21 @@
 # ARK Server Backup/Restore Guide
 
+## Simplified Backup System
+
+The backup system uses a **single CronJob template** for both scheduled and manual backups:
+
+- **Scheduled backups**: CronJob runs automatically on schedule → `/host-backups/scheduled/`
+- **Manual backups**: Created on-demand using `kubectl create job --from=cronjob` → `/host-backups/manual/`
+
+**Benefits**:
+- Single source of truth for backup logic
+- No template duplication
+- Consistent backup behavior between manual and scheduled backups
+- Easier maintenance and updates
+
 ## Backup Structure (Optimized for Essential Data)
 
-The backup system has been optimized to only backup essential data that cannot be re-downloaded:
+The backup system only backs up essential data that cannot be re-downloaded:
 
 - **ARK Saves** (`ark-saves.tar.gz`): World data, player data, tribe data, structures - the most critical data
 - **ARK Plugins** (`ark-plugins.tar.gz`): Installed mods and plugins (if any)
@@ -12,6 +25,7 @@ The backup system has been optimized to only backup essential data that cannot b
 **NOT backed up**: Server binaries, SteamCMD, and other downloadable files that can be re-downloaded during server startup.
 
 **Benefits**:
+
 - 90%+ smaller backup files (typically MB instead of GB)
 - Faster backup and restore operations
 - Reduced storage requirements
@@ -20,24 +34,30 @@ The backup system has been optimized to only backup essential data that cannot b
 ## Docker Desktop WSL Path Mapping
 
 Docker Desktop runs in WSL, so the paths are mapped as follows:
+
 - Windows `D:\ark-backups` → WSL `/run/desktop/mnt/host/d/ark-backups`
 - Windows `C:\ark-backups` → WSL `/run/desktop/mnt/host/c/ark-backups`
 
 ## Manual Backup (Export PVC data to Windows host)
 
 1. **Create backup directory on Windows:**
+
 ```powershell
 mkdir D:\ark-backups
 ```
 
 2. **Enable backup in release.yaml:**
+
 ```yaml
 backup:
   enabled: true
   hostPath: "/run/desktop/mnt/host/d/ark-backups"  # WSL path mapping to D:\ark-backups
+  schedule: ""  # Leave empty for manual backups only
+  # schedule: "0 3 * * *"  # Set cron expression to enable scheduled backups
 ```
 
 2. **Apply the configuration:**
+
 ```powershell
 git add -A
 git commit -m "Enable ARK server backup"
@@ -47,6 +67,7 @@ flux reconcile kustomization apps
 ```
 
 3. **The backup Job will run automatically and create:**
+
 ```
 D:\ark-backups\
 └── manual\
@@ -63,17 +84,19 @@ D:\ark-backups\
 ## Scheduled Backups (Automatic daily backups)
 
 1. **Enable scheduled backups:**
+
 ```yaml
 backup:
   enabled: true
+  schedule: "0 3 * * *"  # Daily at 3 AM (if empty, no scheduled backups)
   hostPath: "/run/desktop/mnt/host/d/ark-backups"
-  schedule:
-    enabled: true
-    cron: "0 3 * * *"  # Daily at 3 AM
-    retention: 7       # Keep last 7 backups
+  retention: 7           # Keep last 7 scheduled backups
 ```
 
+**Note**: This creates both scheduled backups AND enables manual backups using the same template.
+
 2. **This creates automated backups in:**
+
 ```
 D:\ark-backups\scheduled\
 ├── ark-server-20250709-030000\
@@ -92,6 +115,7 @@ D:\ark-backups\scheduled\
 1. **Place your backup in C:\ark-backups\**
 
 2. **Enable restore in release.yaml:**
+
 ```yaml
 restore:
   enabled: true
@@ -102,6 +126,7 @@ restore:
 ```
 
 3. **Apply and the restore Job will run:**
+
 ```powershell
 git add -A
 git commit -m "Restore ARK server from backup"
@@ -111,6 +136,7 @@ flux reconcile kustomization apps
 ```
 
 4. **After restore, restart the server:**
+
 ```powershell
 kubectl delete pod asa-server-0 -n asa-server
 # Pod will restart automatically with restored data
@@ -119,21 +145,25 @@ kubectl delete pod asa-server-0 -n asa-server
 ## Manual Commands
 
 **Start manual backup:**
+
 ```powershell
 kubectl create job --from=cronjob/asa-server-scheduled-backup asa-server-manual-backup -n asa-server
 ```
 
 **Monitor backup progress:**
+
 ```powershell
 kubectl logs -f job/asa-server-manual-backup -n asa-server
 ```
 
 **Check backup files on host:**
+
 ```powershell
 dir C:\ark-backups
 ```
 
 **Copy saves manually (alternative method):**
+
 ```powershell
 # Export saves only
 kubectl cp asa-server-0:/ark/binaries/ShooterGame/Saved ./ark-saves -n asa-server

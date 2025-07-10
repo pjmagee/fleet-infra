@@ -134,17 +134,10 @@ spec:
     backup:
       enabled: true
       hostPath: "/run/desktop/mnt/host/d/ark-backups"
-      schedule:
-        enabled: true  # Enable scheduled backups
-        cron: "0 3 * * *"  # Daily at 3 AM
-        retention: 7  # Keep last 7 backups
-      persistence:
-        enabled: false  # Use hostPath, not PVC for backups
-        size: 20Gi
-        storageClass: "hostpath"
-        accessModes:
-          - ReadWriteOnce
+      schedule: "0 3 * * *"  # Daily at 3 AM (set to "" to disable scheduled backups)
+      retention: 7  # Keep last 7 backups
 
-    # Management tools
-    management:
-      enabled: true
+    # Management tools moved to local PowerShell scripts
+    # See charts/asa-server/scripts/ directory
+    # management:
+    #   enabled: false

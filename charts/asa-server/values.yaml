@@ -196,33 +196,22 @@ onePassword:
 
 # Backup configuration
 backup:
-  enabled: false  # Set to true to enable manual backups
+  enabled: false  # Set to true to enable backup functionality
   # Host path where backups will be stored (Docker Desktop WSL path format)
   # This maps to D:\ark-backups on your Windows machine  
   hostPath: "/run/desktop/mnt/host/d/ark-backups"
-  # Scheduled backups
-  schedule:
-    enabled: false  # Set to true to enable scheduled backups
-    cron: "0 3 * * *"  # Daily at 3 AM
-    retention: 7  # Keep last 7 backups
-  # Backup storage (for PVC-based backups within cluster)
-  persistence:
-    enabled: false
-    size: 20Gi
-    storageClass: "hostpath"
-    accessModes:
-      - ReadWriteOnce
+  # Scheduled backups - if empty/unset, only manual backups available
+  schedule: ""  # Set to cron expression (e.g., "0 3 * * *") to enable scheduled backups
+  retention: 7  # Keep last N backups (for scheduled backups only)
 
 # Restore configuration  
 restore:
   enabled: false  # Set to true when you want to restore from backup
   restoreBinaries: false  # Restore server files (usually not needed)
 
-# Management tools
-management:
-  enabled: true
-  # Management container image (lightweight with tools)
-  image:
-    repository: ubuntu
-    tag: "22.04"
-    pullPolicy: IfNotPresent
+# Management tools have been moved to local PowerShell scripts
+# See charts/asa-server/scripts/ directory for management scripts
+# These scripts use kubectl and helm from your local machine
+#
+# management:
+#   enabled: false  # Management pod removed - use local scripts instead

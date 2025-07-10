@@ -1,4 +1,4 @@
-{{- if and .Values.backup.enabled .Values.backup.schedule.enabled }}
+{{- if and .Values.backup.enabled .Values.backup.schedule (ne .Values.backup.schedule "") }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -7,7 +7,7 @@ metadata:
     {{- include "asa-server.labels" . | nindent 4 }}
     app.kubernetes.io/component: scheduled-backup
 spec:
-  schedule: {{ .Values.backup.schedule.cron | quote }}
+  schedule: {{ .Values.backup.schedule | quote }}
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 3
   failedJobsHistoryLimit: 1
@@ -29,9 +29,19 @@ spec:
                   apk add --no-cache tar gzip
                   
                   BACKUP_DATE=$(date +"%Y%m%d-%H%M%S")
-                  BACKUP_DIR="/host-backups/scheduled/ark-server-${BACKUP_DATE}"
                   
-                  echo "=== ARK Server Scheduled Backup Started ==="
+                  # Determine if this is a scheduled backup or manual backup
+                  # Manual backups are created with job name containing "manual"
+                  if echo "$HOSTNAME" | grep -q "manual" || echo "${JOB_NAME:-}" | grep -q "manual"; then
+                    BACKUP_TYPE="manual"
+                    BACKUP_DIR="/host-backups/manual/ark-server-backup-${BACKUP_DATE}"
+                    echo "=== ARK Server Manual Backup Started ==="
+                  else
+                    BACKUP_TYPE="scheduled"
+                    BACKUP_DIR="/host-backups/scheduled/ark-server-${BACKUP_DATE}"
+                    echo "=== ARK Server Scheduled Backup Started ==="
+                  fi
+                  
                   echo "Backup Date: $(date)"
                   echo "Backup Directory: ${BACKUP_DIR}"
                   mkdir -p "${BACKUP_DIR}"
@@ -80,7 +90,7 @@ spec:
                   cat > "${BACKUP_DIR}/backup-metadata.json" << EOF
                   {
                     "backupDate": "$(date -Iseconds)",
-                    "backupType": "scheduled",
+                    "backupType": "${BACKUP_TYPE}",
                     "serverName": "{{ .Values.server.serverName }}",
                     "mapName": "{{ .Values.server.mapName }}",
                     "saveDir": "{{ .Values.server.saveDir }}",
@@ -101,11 +111,15 @@ spec:
                   cat "${BACKUP_DIR}/backup-metadata.json"
                   echo "=== Backup Completed Successfully ==="
                   
-                  # Cleanup old backups (keep last {{ .Values.backup.schedule.retention }} backups)
-                  echo "Cleaning up old backups..."
-                  cd /host-backups/scheduled
-                  ls -t ark-server-* | tail -n +{{ add .Values.backup.schedule.retention 1 }} | xargs -r rm -rf
-                  echo "Cleanup completed."
+                  # Cleanup old backups (only for scheduled backups, keep manual backups)
+                  if [ "$BACKUP_TYPE" = "scheduled" ]; then
+                    echo "Cleaning up old scheduled backups..."
+                    cd /host-backups/scheduled
+                    ls -t ark-server-* 2>/dev/null | tail -n +{{ add .Values.backup.retention 1 }} | xargs -r rm -rf
+                    echo "Cleanup completed."
+                  else
+                    echo "Manual backup completed - no cleanup performed"
+                  fi
               env:
                 - name: TZ
                   value: {{ .Values.timezone | default "UTC" | quote }}
