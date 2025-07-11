@@ -11,7 +11,7 @@ spec:
     remediation:
       retries: 3
     cleanupOnFail: true
-    force: false  # Set to true for faster upgrades (forces pod replacement)
+    force: true  # Force resource updates through replacement strategy for StatefulSet changes
   chart:
     spec:
       chart: charts/asa-server
