@@ -35,52 +35,18 @@ spec:
               echo "Backup contents:"
               ls -la "${RESTORE_PATH}"
               
-              # Check if this is new format backup (with saves) or old format
+              # Check if this is new format backup (saves-only) or old format
               if [ -f "${RESTORE_PATH}/ark-saves.tar.gz" ]; then
-                echo "Detected new backup format (saves-based)"
+                echo "Detected saves-only backup format"
                 
-                # Restore ARK saves (most important)
+                # Restore ARK saves (world data)
                 echo "Restoring ARK saves..."
-                if [ -f "${RESTORE_PATH}/ark-saves.tar.gz" ]; then
-                  # Create the saves directory if it doesn't exist
-                  mkdir -p /ark/binaries/ShooterGame/Saved
-                  # Clear existing saves and restore
-                  rm -rf /ark/binaries/ShooterGame/Saved/*
-                  tar -xzf "${RESTORE_PATH}/ark-saves.tar.gz" -C /ark/binaries/ShooterGame/Saved
-                  echo "Saves restored successfully!"
-                else
-                  echo "WARNING: ark-saves.tar.gz not found in backup"
-                fi
-                
-                # Restore plugins/mods if available
-                if [ -f "${RESTORE_PATH}/ark-plugins.tar.gz" ]; then
-                  echo "Restoring ARK plugins/mods..."
-                  mkdir -p /ark/binaries/ShooterGame/Plugins
-                  rm -rf /ark/binaries/ShooterGame/Plugins/*
-                  tar -xzf "${RESTORE_PATH}/ark-plugins.tar.gz" -C /ark/binaries/ShooterGame/Plugins
-                  echo "Plugins/mods restored successfully!"
-                else
-                  echo "No plugins/mods to restore (normal if no mods installed)"
-                fi
-                
-                # Restore configuration files
-                if [ -d "${RESTORE_PATH}/config" ]; then
-                  echo "Restoring configuration files..."
-                  
-                  if [ -f "${RESTORE_PATH}/config/Game.ini" ]; then
-                    cp "${RESTORE_PATH}/config/Game.ini" /ark/instance/
-                    echo "Game.ini restored"
-                  fi
-                  
-                  if [ -f "${RESTORE_PATH}/config/GameUserSettings.ini" ]; then
-                    cp "${RESTORE_PATH}/config/GameUserSettings.ini" /ark/instance/
-                    echo "GameUserSettings.ini restored"
-                  fi
-                  
-                  echo "Configuration files restored successfully!"
-                else
-                  echo "No configuration files to restore"
-                fi
+                # Create the saves directory if it doesn't exist
+                mkdir -p /ark/binaries/ShooterGame/Saved
+                # Clear existing saves and restore
+                rm -rf /ark/binaries/ShooterGame/Saved/*
+                tar -xzf "${RESTORE_PATH}/ark-saves.tar.gz" -C /ark/binaries/ShooterGame/Saved
+                echo "Saves restored successfully!"
                 
               else
                 echo "Detected old backup format (full binaries/instance)"
@@ -111,8 +77,8 @@ spec:
               
               # Fix permissions
               echo "Fixing permissions..."
-              chown -R 1000:121 /ark/instance /ark/binaries 2>/dev/null || true
-              chmod -R 775 /ark/instance /ark/binaries 2>/dev/null || true
+              chown -R 1000:121 /ark/binaries 2>/dev/null || true
+              chmod -R 775 /ark/binaries 2>/dev/null || true
               
               echo "Restore completed successfully!"
               echo "Server should be restarted to load the restored data."
@@ -120,17 +86,12 @@ spec:
             runAsUser: 0  # Need root for chown operations
             runAsGroup: 0
           volumeMounts:
-            - name: ark-instance
-              mountPath: /ark/instance
             - name: ark-binaries  
               mountPath: /ark/binaries
             - name: host-restore-dir
               mountPath: /host-restore
               readOnly: true
       volumes:
-        - name: ark-instance
-          persistentVolumeClaim:
-            claimName: ark-instance-{{ include "asa-server.fullname" . }}-0
         - name: ark-binaries
           persistentVolumeClaim:
             claimName: ark-binaries-{{ include "asa-server.fullname" . }}-0

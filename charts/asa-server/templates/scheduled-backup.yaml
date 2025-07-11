@@ -46,7 +46,7 @@ spec:
                   echo "Backup Directory: ${BACKUP_DIR}"
                   mkdir -p "${BACKUP_DIR}"
                   
-                  # Backup 1: ARK Saves (world data, player data, etc.)
+                  # Backup ARK Saves (world data, player data, etc.)
                   echo "Backing up ARK saves..."
                   if [ -d "/ark/binaries/ShooterGame/Saved" ]; then
                       tar -czf "${BACKUP_DIR}/ark-saves.tar.gz" -C /ark/binaries/ShooterGame/Saved . \
@@ -54,36 +54,8 @@ spec:
                       echo "Saves backup size: $(du -h ${BACKUP_DIR}/ark-saves.tar.gz | cut -f1)"
                   else
                       echo "WARNING: No saves directory found at /ark/binaries/ShooterGame/Saved"
-                  fi
-                  
-                  # Backup 2: ARK Plugins/Mods (if any)
-                  echo "Backing up ARK plugins/mods..."
-                  if [ -d "/ark/binaries/ShooterGame/Plugins" ] && [ "$(ls -A /ark/binaries/ShooterGame/Plugins 2>/dev/null)" ]; then
-                      tar -czf "${BACKUP_DIR}/ark-plugins.tar.gz" -C /ark/binaries/ShooterGame/Plugins .
-                      echo "Plugins backup size: $(du -h ${BACKUP_DIR}/ark-plugins.tar.gz | cut -f1)"
-                  else
-                      echo "No plugins/mods found to backup"
-                      touch "${BACKUP_DIR}/no-plugins.txt"
-                  fi
-                  
-                  # Backup 3: Configuration files (only if they have content)
-                  echo "Backing up configuration files..."
-                  mkdir -p "${BACKUP_DIR}/config"
-                  
-                  # Check for Game.ini with content
-                  if [ -f "/ark/instance/Game.ini" ] && [ -s "/ark/instance/Game.ini" ]; then
-                      cp "/ark/instance/Game.ini" "${BACKUP_DIR}/config/"
-                      echo "Game.ini backed up ($(wc -l < /ark/instance/Game.ini) lines)"
-                  else
-                      echo "Game.ini not found or empty"
-                  fi
-                  
-                  # Check for GameUserSettings.ini with content  
-                  if [ -f "/ark/instance/GameUserSettings.ini" ] && [ -s "/ark/instance/GameUserSettings.ini" ]; then
-                      cp "/ark/instance/GameUserSettings.ini" "${BACKUP_DIR}/config/"
-                      echo "GameUserSettings.ini backed up ($(wc -l < /ark/instance/GameUserSettings.ini) lines)"
-                  else
-                      echo "GameUserSettings.ini not found or empty"
+                      echo "Creating empty backup marker..."
+                      touch "${BACKUP_DIR}/no-saves-found.txt"
                   fi
                   
                   # Create backup metadata
@@ -95,13 +67,10 @@ spec:
                     "mapName": "{{ .Values.server.mapName }}",
                     "saveDir": "{{ .Values.server.saveDir }}",
                     "files": {
-                      "saves": "ark-saves.tar.gz",
-                      "plugins": "ark-plugins.tar.gz",
-                      "config": "config/"
+                      "saves": "ark-saves.tar.gz"
                     },
                     "sizes": {
                       "saves": "$(du -h ${BACKUP_DIR}/ark-saves.tar.gz 2>/dev/null | cut -f1 || echo 'N/A')",
-                      "plugins": "$(du -h ${BACKUP_DIR}/ark-plugins.tar.gz 2>/dev/null | cut -f1 || echo 'N/A')",
                       "total": "$(du -sh ${BACKUP_DIR} | cut -f1)"
                     }
                   }
@@ -124,18 +93,12 @@ spec:
                 - name: TZ
                   value: {{ .Values.timezone | default "UTC" | quote }}
               volumeMounts:
-                - name: ark-instance
-                  mountPath: /ark/instance
-                  readOnly: true
                 - name: ark-binaries  
                   mountPath: /ark/binaries
                   readOnly: true
                 - name: host-backup-dir
                   mountPath: /host-backups
           volumes:
-            - name: ark-instance
-              persistentVolumeClaim:
-                claimName: ark-instance-{{ include "asa-server.fullname" . }}-0
             - name: ark-binaries
               persistentVolumeClaim:
                 claimName: ark-binaries-{{ include "asa-server.fullname" . }}-0

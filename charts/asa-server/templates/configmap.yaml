@@ -17,12 +17,17 @@ data:
   GameUserSettings.ini: |
     # GameUserSettings.ini for ARK: Survival Ascended
     [ServerSettings]
-    # Basic server settings - these can be overridden by command line args
+    # Basic server settings
     ServerName={{ .Values.server.serverName }}
+    {{- if .Values.onePassword.enabled }}
+    # Note: Passwords will be set via command line args from 1Password environment variables
+    # ServerPassword and ServerAdminPassword are injected at runtime from secrets
+    {{- else }}
     {{- if .Values.server.serverPassword }}
     ServerPassword={{ .Values.server.serverPassword }}
     {{- end }}
     ServerAdminPassword={{ .Values.server.serverAdminPassword }}
+    {{- end }}
     MaxPlayers={{ .Values.server.maxPlayers }}
     RCONEnabled=True
     RCONPort={{ .Values.server.ports.rcon }}
