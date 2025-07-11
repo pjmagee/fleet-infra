@@ -1,62 +1,108 @@
-# Default values for asa-server.
-# This is a YAML-formatted file.
-# Declare variables to be passed into your templates.
-
-# Replica control - set to 0 to shutdown server
 replicaCount: 1
-
-# ASA Server Configuration
 image:
   repository: zerschranzer/ark-ascended-base
-  pullPolicy: Always  # Always pull to get latest updates
-  # Overrides the image tag whose default is the chart appVersion.
   tag: "latest"
+  pullPolicy: Never # Built locally and not pushed on docker.io
 
 nameOverride: ""
 fullnameOverride: ""
-
-# Timezone for the container (optional, defaults to UTC)
 timezone: "Europe/London"
 
-# Update settings
 update:
-  # Whether to run ARK server update/verification during pod startup
-  # Set to false to skip update if you know files are already downloaded
   enabled: true
   
-# Server Settings (Zerschranzer configuration format)
 server:
-  # Basic settings
   serverName: "My ASA Server"
-  serverPassword: ""  # Server password (leave empty for no password)
+  serverPassword: ""
   serverAdminPassword: "adminpassword"
-  maxPlayers: 70
-  
-  # Map and world settings
+  maxPlayers: 70 
   mapName: "Ragnarok_WP"  # TheIsland_WP, ScorchedEarth_WP, TheCenter_WP, Aberration_WP, Extinction_WP, Ragnarok_WP
-  saveDir: "asa-server"  # Must be unique per instance
-  
-  # Network configuration
+  saveDir: "asa-server"
   ports:
-    game: 7777      # Port
-    query: 7778     # QueryPort (typically game port + 1)
-    rcon: 27020     # RCONPort
+    game: 7777
+    query: 7778
+    rcon: 27020    
+  clusterID: ""
+  customStartParameters: "-NoBattlEye -NoHangDetection"
   
-  # Mods (ASA uses GameUserSettings.ini, not command-line)
-  modIDs: ""  # Comma-separated mod IDs for ActiveMods in GameUserSettings.ini
-  
-  # Cluster settings
-  clusterID: ""  # Leave empty if not using clustering
-  
-  # Custom start parameters (Zerschranzer format)
-  customStartParameters: "-NoBattlEye -crossplay -NoHangDetection"
+  # ASA ServerSettings - all settings from [ServerSettings] section of GameUserSettings.ini
+  # Only includes settings that are compatible with ARK: Survival Ascended
+  serverSettings:
+    # ModIDs as a YAML list (rendered as CSV in configmap)
+    # Use strings to prevent scientific notation for large mod IDs
+    modIDs: []  # List of mod IDs (as strings) - e.g., ["928029", "731604991", "1404697612"]
+    # Important: Large mod IDs must be strings to avoid scientific notation in YAML
+    # Good: ["928029", "731604991", "1404697612"] 
+    # Bad:  [928029, 731604991, 1404697612]  # Numbers > 6 digits may become scientific notation
+    
+    # Basic multipliers
+    XPMultiplier: 1.0
+    TamingSpeedMultiplier: 1.0
+    HarvestAmountMultiplier: 1.0
+    ResourcesRespawnPeriodMultiplier: 1.0
+    
+    # Creature settings
+    DinoCharacterFoodDrainMultiplier: 1.0
+    DinoCharacterHealthRecoveryMultiplier: 1.0
+    DinoCharacterStaminaDrainMultiplier: 1.0
+    DinoDamageMultiplier: 1.0
+    DinoResistanceMultiplier: 1.0
+    DinoCountMultiplier: 1.0
+    
+    # Player settings
+    PlayerCharacterFoodDrainMultiplier: 1.0
+    PlayerCharacterHealthRecoveryMultiplier: 1.0
+    PlayerCharacterStaminaDrainMultiplier: 1.0
+    PlayerCharacterWaterDrainMultiplier: 1.0
+    PlayerDamageMultiplier: 1.0
+    PlayerResistanceMultiplier: 1.0
+    
+    # Day/Night cycle
+    DayCycleSpeedScale: 1.0
+    DayTimeSpeedScale: 1.0
+    NightTimeSpeedScale: 1.0
+    
+    # Quality of life
+    AllowFlyerCarryPvE: true
+    ShowMapPlayerLocation: true
+    EnablePVPGamma: false
+    AllowThirdPersonPlayer: true
+    ServerCrosshair: true
+    
+    # Structure settings
+    StructureResistanceMultiplier: 1.0
+    StructurePickupTimeAfterPlacement: 30.0
+    StructurePickupHoldDuration: 0.5
+    TheMaxStructuresInRange: 10500
+    
+    # Advanced settings
+    AutoSavePeriodMinutes: 15.0
+    DifficultyOffset: 1.0
+    OverrideOfficialDifficulty: 0.0  # Set to 5.0 to match official servers (level 150 creatures)
+    
+    # PvE settings
+    serverPVE: false  # Set to true for PvE mode
+    DisableStructureDecayPvE: false
+    DisableDinoDecayPvE: false
+    PvEDinoDecayPeriodMultiplier: 1.0
+    
+    # Breeding settings (ASA compatible)
+    BabyMatureSpeedMultiplier: 1.0
+    EggHatchSpeedMultiplier: 1.0
+    MatingIntervalMultiplier: 1.0
+    BabyCuddleIntervalMultiplier: 1.0
+    BabyImprintAmountMultiplier: 1.0
+    BabyImprintingStatScaleMultiplier: 1.0
+    
+    # Item settings
+    ItemStackSizeMultiplier: 1.0
+    GlobalItemDecompositionTimeMultiplier: 1.0
+    GlobalSpoilingTimeMultiplier: 1.0
+    
+    # Admin settings
+    AdminLogging: false
+    ServerHardcore: false
 
-# Docker image mode - no longer needed with Zerschranzer
-# API Configuration (AsaApi) - handled by the base image
-# Performance and Monitoring - handled by the base image
-# Update settings - handled by the base image
-
-# Resource limits - Following Zerschranzer documentation minimum requirements
 resources:
   limits:
     cpu: 4
@@ -65,27 +111,21 @@ resources:
     cpu: 2
     memory: 16Gi
 
-# Persistence (Zerschranzer architecture)
 persistence:
   enabled: true
-  
-  # Storage type: "pvc" for PersistentVolumeClaims or "hostPath" for direct host storage
-  type: "pvc"  # Options: "pvc", "hostPath"
-  
+  type: "pvc"  # Options: "pvc", "hostPath"  
   # Host paths (only used when type: "hostPath")
   hostPaths:
     binaries: "/run/desktop/mnt/host/m/docker/asa-server/server-files"  # Shared ARK server binaries
     instance: "/run/desktop/mnt/host/m/docker/asa-server/instance"      # Instance-specific data
   
   # PVC settings (only used when type: "pvc")
-  # Shared server binaries volume
   binaries:
     size: 60Gi
     storageClass: ""
     accessModes:
       - ReadWriteOnce
   
-  # Instance-specific data (configs, saves, logs)
   instance:
     size: 10Gi
     storageClass: ""
@@ -98,9 +138,9 @@ service:
   # NodePort configuration - ports will be auto-assigned or can be specified
   # Valid NodePort range: 30000-32767
   nodePorts:
-    game: ""      # Auto-assign if empty, or specify port (e.g., 30777)
-    query: ""     # Auto-assign if empty, or specify port (e.g., 30778) 
-    rcon: ""      # Auto-assign if empty, or specify port (e.g., 30020)
+    game: 30777      # Auto-assign if empty, or specify port (e.g., 30777)
+    query: 30778     # Auto-assign if empty, or specify port (e.g., 30778)
+    rcon: 30020      # Auto-assign if empty, or specify port (e.g., 30020)
   # Note: Internal ports are defined in server.ports section
 
 # Use hostPort for local development (Docker Desktop)
@@ -194,6 +234,20 @@ onePassword:
   adminPasswordKey: "adminPassword"  # Key for SERVER_ADMIN_PASSWORD
   serverPasswordKey: "serverPassword"  # Key for SERVER_PASSWORD (if using server password)
 
+# Administrator Whitelisting
+# Players listed here can use cheat commands automatically without entering a password
+# Get ARK IDs by running 'whoami' command in-game console or 'cheat ListPlayers' as admin
+adminWhitelist:
+  enabled: false  # Set to true to enable admin whitelisting
+  # List of ARK IDs (32 character alphanumeric strings for ASA)
+  # Each ID should be on its own line in the list
+  arkIDs: []
+  # Example:
+  # arkIDs:
+  #   - "1234567890abcdef1234567890abcdef"  # Player 1
+  #   - "fedcba0987654321fedcba0987654321"  # Player 2
+  #   - "abcdef1234567890abcdef1234567890"  # Player 3
+
 # Backup configuration
 backup:
   enabled: false  # Set to true to enable backup functionality
@@ -208,10 +262,6 @@ backup:
 restore:
   enabled: false  # Set to true when you want to restore from backup
   restoreBinaries: false  # Restore server files (usually not needed)
-
-# Management tools have been moved to local PowerShell scripts
-# See charts/asa-server/scripts/ directory for management scripts
-# These scripts use kubectl and helm from your local machine
-#
-# management:
-#   enabled: false  # Management pod removed - use local scripts instead
+  restoreInstance: true   # Restore world saves and instance data (usually what you want)
+  backupName: ""          # Name of backup directory to restore from (e.g., "backup-20240711-120000")
+  hostPath: ""            # Path to backups (defaults to backup.hostPath if not specified)

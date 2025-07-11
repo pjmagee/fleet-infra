@@ -12,6 +12,17 @@ data:
     # Example:
     # [/script/shootergame.shootergamemode]
     # bPvEDisableFriendlyFire=true
+
+  {{- if .Values.adminWhitelist.enabled }}
+  # AllowedCheaterAccountIDs.txt - Administrator whitelist
+  # Players listed here can use cheat commands without entering admin password
+  AllowedCheaterAccountIDs.txt: |
+    {{- if .Values.adminWhitelist.arkIDs }}
+    {{- range .Values.adminWhitelist.arkIDs }}
+    {{ . }}
+    {{- end }}
+    {{- end }}
+  {{- end }}
   
   # GameUserSettings.ini - Main server configuration
   GameUserSettings.ini: |
@@ -29,23 +40,37 @@ data:
     ServerAdminPassword={{ .Values.server.serverAdminPassword }}
     {{- end }}
     MaxPlayers={{ .Values.server.maxPlayers }}
-    RCONEnabled=True
-    RCONPort={{ .Values.server.ports.rcon }}
     
-    # Default multipliers (can be customized)
-    XPMultiplier=1.0
-    TamingSpeedMultiplier=1.0
-    HarvestAmountMultiplier=1.0
-    ResourcesRespawnPeriodMultiplier=1.0
-    
-    # Quality of life settings
-    AllowFlyerCarryPvE=True
-    ShowMapPlayerLocation=True
-    EnablePVPGamma=True
-
     {{- if .Values.server.modIDs }}
-    # Mod configuration for ASA
-    ActiveMods={{ .Values.server.modIDs }}
+    # Mod configuration for ASA - converts YAML list to CSV string (no spaces)
+    # Template logic: {{range $i, $mod := .Values.server.modIDs}}{{if $i}},{{end}}{{ $mod }}{{end}}
+    # Example input:  ["928029", "731604991", "1404697612"] 
+    # Example output: ActiveMods=928029,731604991,1404697612
+    ActiveMods={{ range $i, $mod := .Values.server.modIDs }}{{if $i}},{{end}}{{ $mod }}{{end}}
+    {{- end }}
+
+    {{- if .Values.server.serverSettings }}
+    # Comprehensive ServerSettings from values.yaml
+    # All settings are ASA-compatible and map to official [ServerSettings] documentation
+    {{- range $key, $value := .Values.server.serverSettings }}
+    {{ $key }}={{ $value }}
+    {{- end }}
     {{- end }}
     
-    # Custom settings can be added here
+    # RCON settings - always enabled for management
+    RCONEnabled=true
+    {{- if .Values.server.serverSettings.RCONPort }}
+    RCONPort={{ .Values.server.serverSettings.RCONPort }}
+    {{- else }}
+    RCONPort={{ .Values.server.ports.rcon }}
+    {{- end }}
+    
+    # Session settings
+    [SessionSettings]
+    Port={{ .Values.server.ports.game }}
+    QueryPort={{ .Values.server.ports.query }}
+    SessionName={{ .Values.server.serverName }}
+
+    # Engine settings  
+    [/Script/Engine.GameSession]
+    MaxPlayers={{ .Values.server.maxPlayers }}

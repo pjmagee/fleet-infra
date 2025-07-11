@@ -13,23 +13,26 @@ The backup system uses a **single CronJob template** for both scheduled and manu
 - Consistent backup behavior between manual and scheduled backups
 - Easier maintenance and updates
 
-## Backup Structure (Optimized for Essential Data)
+## Backup Structure (Saves-Only, Ultra Fast)
 
-The backup system only backs up essential data that cannot be re-downloaded:
+The backup system now only backs up **ARK save data** - the most critical information:
 
-- **ARK Saves** (`ark-saves.tar.gz`): World data, player data, tribe data, structures - the most critical data
-- **ARK Plugins** (`ark-plugins.tar.gz`): Installed mods and plugins (if any)
-- **Config Files** (`config/`): Game.ini and GameUserSettings.ini (if customized)
+- **ARK Saves** (`ark-saves.tar.gz`): World data, player data, tribe data, structures
 - **Metadata** (`backup-metadata.json`): Backup information and verification data
 
-**NOT backed up**: Server binaries, SteamCMD, and other downloadable files that can be re-downloaded during server startup.
+**NOT backed up**:
+- Server binaries (can be re-downloaded)
+- SteamCMD files (can be re-downloaded) 
+- Config files (managed by Helm/ConfigMap)
+- Plugins/mods (can be re-downloaded)
 
 **Benefits**:
 
-- 90%+ smaller backup files (typically MB instead of GB)
-- Faster backup and restore operations
-- Reduced storage requirements
-- Only essential data is preserved
+- ⚡ **Ultra-fast backups** (typically a few MB, completed in seconds)
+- 💾 **Minimal storage** requirements (99%+ smaller than full backups)
+- 🚀 **Fast restores** (only essential data)
+- 🔄 **Consistent configuration** (config comes from Helm values/1Password)
+- 🎯 **Focus on what matters** (your world progress)
 
 ## Docker Desktop WSL Path Mapping
 
@@ -72,13 +75,9 @@ flux reconcile kustomization apps
 D:\ark-backups\
 └── manual\
     └── ark-server-backup-20250709-143022\
-        ├── ark-saves.tar.gz        # Save games, player data (essential)
-        ├── ark-plugins.tar.gz      # Mods/plugins (if any)
-        ├── config\
-        │   ├── Game.ini            # Game configuration
-        │   └── GameUserSettings.ini # Server settings
-        ├── backup-metadata.json    # Backup metadata
-        └── no-plugins.txt          # Created if no plugins to backup
+        ├── ark-saves.tar.gz        # World save data (only essential data)
+        ├── backup-metadata.json    # Backup information and file sizes
+        └── no-saves-found.txt      # Created if no save data found (new server)
 ```
 
 ## Scheduled Backups (Automatic daily backups)
@@ -112,7 +111,7 @@ D:\ark-backups\scheduled\
 
 ## Restore from Host Backup
 
-1. **Place your backup in C:\ark-backups\**
+1. **Place your backup in C:\ark-backups\ (maps to WSL path automatically)**
 
 2. **Enable restore in release.yaml:**
 
@@ -120,7 +119,7 @@ D:\ark-backups\scheduled\
 restore:
   enabled: true
   backupName: "ark-server-backup-20250709-143022"  # Directory name
-  hostPath: "C:/ark-backups"
+  hostPath: "/run/desktop/mnt/host/c/ark-backups"  # WSL path mapping to C:\ark-backups
   restoreInstance: true   # Restore saves/configs
   restoreBinaries: false  # Usually not needed
 ```

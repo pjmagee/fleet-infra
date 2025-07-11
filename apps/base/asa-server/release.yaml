@@ -44,8 +44,105 @@ spec:
         game: 7777
         query: 7778
         rcon: 27020
-      modIDs: ""  # No mods for debugging
-      customStartParameters: "-NoBattlEye -ServerPlatform=PC  -NoHangDetection -ForceAllowCaveFlyers"
+      
+      # Comprehensive ServerSettings section with all major ASA-compatible options
+      # These settings map to the [ServerSettings] section in GameUserSettings.ini
+      serverSettings:
+        # ModIDs as a YAML list (rendered as CSV in configmap)
+        # Use strings to prevent scientific notation for large mod IDs
+        modIDs: []  # List of mod IDs as strings - e.g., ["928029", "731604991"] - empty for debugging
+        # Example popular mods (uncomment to use):
+        # - "928029"      # Super Structures
+        # - "731604991"   # Structures Plus (S+)  
+        # - "1404697612"  # Awesome SpyGlass!
+        # Game Mechanics
+        XPMultiplier: 1.0
+        TamingSpeedMultiplier: 1.0
+        HarvestAmountMultiplier: 1.0
+        ResourcesRespawnPeriodMultiplier: 1.0
+        DifficultyOffset: 1.0
+        OverrideOfficialDifficulty: 5.0  # Max level 150 creatures
+        
+        # Player Settings
+        PlayerCharacterFoodDrainMultiplier: 1.0
+        PlayerCharacterWaterDrainMultiplier: 1.0
+        PlayerCharacterStaminaDrainMultiplier: 1.0
+        PlayerCharacterHealthRecoveryMultiplier: 1.0
+        PlayerDamageMultiplier: 1.0
+        PlayerResistanceMultiplier: 1.0
+        
+        # Creature Settings
+        DinoCharacterFoodDrainMultiplier: 1.0
+        DinoCharacterStaminaDrainMultiplier: 1.0
+        DinoCharacterHealthRecoveryMultiplier: 1.0
+        DinoDamageMultiplier: 1.0
+        DinoResistanceMultiplier: 1.0
+        DinoCountMultiplier: 1.0
+        
+        # Tamed Creature Settings
+        TamedDinoDamageMultiplier: 1.0
+        TamedDinoResistanceMultiplier: 1.0
+        MaxTamedDinos: 5000
+        MaxPersonalTamedDinos: 500
+        
+        # Structure Settings
+        StructureDamageMultiplier: 1.0
+        StructureResistanceMultiplier: 1.0
+        TheMaxStructuresInRange: 10500
+        MaxPlatformSaddleStructureLimit: 75
+        
+        # Quality of Life
+        AllowFlyerCarryPvE: true
+        AllowThirdPersonPlayer: true
+        ShowMapPlayerLocation: true
+        ServerCrosshair: true
+        EnablePVPGamma: true
+        AllowCaveBuildingPvE: false
+        AllowFlyingStaminaRecovery: false
+        
+        # Time Settings  
+        DayCycleSpeedScale: 1.0
+        DayTimeSpeedScale: 1.0
+        NightTimeSpeedScale: 1.0
+        
+        # Breeding Settings
+        BabyMatureSpeedMultiplier: 1.0
+        EggHatchSpeedMultiplier: 1.0
+        MatingIntervalMultiplier: 1.0
+        BabyCuddleIntervalMultiplier: 1.0
+        BabyImprintAmountMultiplier: 1.0
+        BabyImprintingStatScaleMultiplier: 1.0
+        BabyCuddleGracePeriodMultiplier: 1.0
+        BabyCuddleLoseImprintQualitySpeedMultiplier: 1.0
+        
+        # Crop/Harvesting Settings
+        CropGrowthSpeedMultiplier: 1.0
+        CropDecaySpeedMultiplier: 1.0
+        HarvestHealthMultiplier: 1.0
+        
+        # Advanced Settings
+        AutoSavePeriodMinutes: 15.0
+        ItemStackSizeMultiplier: 1.0
+        GlobalSpoilingTimeMultiplier: 1.0
+        PoopIntervalMultiplier: 1.0
+        LayEggIntervalMultiplier: 1.0
+        
+        # PvE Settings
+        serverPVE: false  # Set to true for PvE mode
+        DisableDinoDecayPvE: false
+        DisableStructureDecayPvE: false
+        PvEDinoDecayPeriodMultiplier: 1.0
+        PvEStructureDecayPeriodMultiplier: 1.0
+        
+        # Admin & Logging
+        AdminLogging: false
+        RCONEnabled: true
+        RCONPort: 27020  # Will be overridden by server.ports.rcon
+        
+        # Custom settings can be added here
+        # Note: Values should match ASA [ServerSettings] documentation
+      
+      customStartParameters: "-NoBattlEye -ServerPlatform=PC -NoHangDetection -ForceAllowCaveFlyers"
     # Disable hostPort since we're using NodePort service
     hostPort:
       enabled: false
@@ -77,7 +174,6 @@ spec:
       runAsGroup: 121  # Steam group
       fsGroup: 121
     
-    # Container security context - proper user/group for ARK server
     securityContext:
       runAsUser: 1000
       runAsGroup: 121
@@ -85,19 +181,15 @@ spec:
       readOnlyRootFilesystem: false
       runAsNonRoot: true
     
-    # Service configuration - use NodePort for external access
     service:
       type: NodePort
-      # Optionally specify NodePort numbers (auto-assigned if not specified)
       nodePorts:
         game: 30777    # External port for ARK game traffic (TCP/UDP)
         query: 30778   # External port for ARK query traffic (UDP)
         rcon: 30020    # External port for RCON access (TCP)
     
-    # Add restart policy for debugging
     restartPolicy: Always
     
-    # Probe settings - temporarily disabled for debugging
     probes:
       startup:
         enabled: false  # Disabled for debugging
@@ -130,14 +222,19 @@ spec:
       adminPasswordKey: "adminPassword"
       serverPasswordKey: "serverPassword"
 
+    # Administrator Whitelisting - allows players to use admin commands without password
+    adminWhitelist:
+      enabled: false  # Set to true when you have ARK IDs to whitelist
+      # Get your ARK ID by running 'whoami' command in-game console
+      arkIDs: []
+      # Example ARK IDs (32 character alphanumeric strings):
+      # arkIDs:
+      #   - "1234567890abcdef1234567890abcdef"  # Replace with actual ARK ID
+      #   - "fedcba0987654321fedcba0987654321"  # Replace with actual ARK ID
+
     # Backup configuration
     backup:
       enabled: true
       hostPath: "/run/desktop/mnt/host/d/ark-backups"
       schedule: "0 3 * * *"  # Daily at 3 AM (set to "" to disable scheduled backups)
       retention: 7  # Keep last 7 backups
-
-    # Management tools moved to local PowerShell scripts
-    # See charts/asa-server/scripts/ directory
-    # management:
-    #   enabled: false

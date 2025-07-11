@@ -29,35 +29,6 @@ spec:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       # Init containers for setup
       initContainers:
-        # Generate machine-id for SteamCMD (required for authentication)
-        - name: machine-id
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
-          imagePullPolicy: {{ .Values.image.pullPolicy }}
-          securityContext:
-            runAsUser: 0  # Run as root for system setup
-            runAsGroup: 0
-            allowPrivilegeEscalation: true
-            readOnlyRootFilesystem: false
-            runAsNonRoot: false
-          command: ["/bin/bash", "-c"]
-          args:
-            - |
-              echo ">>> Generating machine-id for SteamCMD..."
-              
-              # Create machine-id in the instance directory
-              if [ ! -f /ark/instance/machine-id ]; then
-                  echo "$(cat /proc/sys/kernel/random/uuid | tr -d '-')" > /ark/instance/machine-id
-                  chmod 444 /ark/instance/machine-id
-                  echo ">>> Machine-id generated: $(cat /ark/instance/machine-id)"
-              else
-                  echo ">>> Machine-id already exists: $(cat /ark/instance/machine-id)"
-              fi
-              
-              echo ">>> Machine-id setup complete"
-          volumeMounts:
-            - name: ark-instance
-              mountPath: /ark/instance
-        
         {{- if .Values.update.enabled }}
         # Download/update ARK server files
         - name: ark-updater
@@ -129,6 +100,15 @@ spec:
                   echo ">>> Using existing machine-id: $(cat /ark/instance/machine-id)"
               fi
               
+              # Fix ownership and permissions for machine-id
+              if [ -f /ark/instance/machine-id ]; then
+                  # Set ownership to the main container user (1000:121)
+                  chown 1000:121 /ark/instance/machine-id
+                  # Set readable permissions for owner and group
+                  chmod 644 /ark/instance/machine-id
+                  echo ">>> Fixed machine-id ownership: $(ls -la /ark/instance/machine-id)"
+              fi
+              
               # Set ownership to steam user (1000:121)
               chown -R 1000:121 /ark/binaries /ark/instance
               
@@ -158,28 +138,42 @@ spec:
           args: 
             - |
               # Set up machine-id for SteamCMD (required for ARK server)
+              echo ">>> Checking machine-id setup..."
+              
               if [ -f /ark/instance/machine-id ]; then
-                  MACHINE_ID_CONTENT=$(cat /ark/instance/machine-id)
-                  echo ">>> Found machine-id: $MACHINE_ID_CONTENT"
+                  echo ">>> Machine-id file exists, checking permissions..."
+                  ls -la /ark/instance/machine-id
                   
-                  # Since we're running as non-root, use environment variable for machine-id
-                  export MACHINE_ID="$MACHINE_ID_CONTENT"
-                  echo ">>> Using MACHINE_ID environment variable for SteamCMD"
+                  # Check if we can read the file
+                  if [ -r /ark/instance/machine-id ]; then
+                      MACHINE_ID_CONTENT=$(cat /ark/instance/machine-id)
+                      echo ">>> Successfully read machine-id: $MACHINE_ID_CONTENT"
+                      
+                      # Set environment variable for SteamCMD
+                      export MACHINE_ID="$MACHINE_ID_CONTENT"
+                      echo ">>> MACHINE_ID environment variable set"
+                  else
+                      echo ">>> ERROR: machine-id file exists but is not readable!"
+                      echo ">>> Current user: $(id)"
+                      echo ">>> File permissions: $(ls -la /ark/instance/machine-id)"
+                      exit 1
+                  fi
               else
                   echo ">>> ERROR: machine-id file not found in /ark/instance/"
+                  echo ">>> Directory contents: $(ls -la /ark/instance/)"
                   echo ">>> This will cause SteamCMD to fail. Check init container logs."
                   exit 1
               fi
               
-              # Start ARK server with ASA-valid arguments only
+              # Start ARK server with minimal CLI args (most settings now in GameUserSettings.ini)
               {{- if .Values.onePassword.enabled }}
-              # Use environment variables from 1Password secret
+              # Use environment variables from 1Password secret for passwords only
               exec /entrypoint.sh run \
-                "{{ .Values.server.mapName }}?SessionName={{ .Values.server.serverName }}?ServerPassword=$serverPassword?RCONEnabled=True?ServerAdminPassword=$adminPassword?AltSaveDirectoryName={{ .Values.server.saveDir }}" \
+                "{{ .Values.server.mapName }}?ServerPassword=$serverPassword?ServerAdminPassword=$adminPassword" \
               {{- else }}
-              # Use values from release configuration
+              # Use values from release configuration for passwords only
               exec /entrypoint.sh run \
-                "{{ .Values.server.mapName }}?SessionName={{ .Values.server.serverName }}?ServerPassword={{ .Values.server.serverPassword }}?RCONEnabled=True?ServerAdminPassword={{ .Values.server.serverAdminPassword }}?AltSaveDirectoryName={{ .Values.server.saveDir }}" \
+                "{{ .Values.server.mapName }}?ServerPassword={{ .Values.server.serverPassword }}?ServerAdminPassword={{ .Values.server.serverAdminPassword }}" \
               {{- end }}
                 {{- if .Values.server.customStartParameters }}
                 {{- range (split " " .Values.server.customStartParameters) }}
@@ -188,14 +182,11 @@ spec:
                 {{- end }}
                 {{- end }}
                 {{- end }}
-                "-WinLiveMaxPlayers={{ .Values.server.maxPlayers }}" \
-                "-port={{ .Values.server.ports.game }}" \
-                "-QueryPort={{ .Values.server.ports.query }}" \
-                "-RCONPort={{ .Values.server.ports.rcon }}" \
                 {{- if .Values.server.clusterID }}
                 "-ClusterDirOverride=/ark/cluster" \
                 "-ClusterId={{ .Values.server.clusterID }}" \
                 {{- end }}
+                "-AltSaveDirectoryName={{ .Values.server.saveDir }}"
           ports:
             - name: game-tcp
               containerPort: {{ .Values.server.ports.game }}
@@ -309,6 +300,12 @@ spec:
             - name: config
               mountPath: /ark/instance/GameUserSettings.ini
               subPath: GameUserSettings.ini
+            {{- if .Values.adminWhitelist.enabled }}
+            # Administrator whitelist file
+            - name: config
+              mountPath: /ark/binaries/ShooterGame/Saved/AllowedCheaterAccountIDs.txt
+              subPath: AllowedCheaterAccountIDs.txt
+            {{- end }}
             {{- if .Values.server.clusterID }}
             # Cluster data volume
             - name: ark-cluster
