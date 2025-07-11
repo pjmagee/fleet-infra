@@ -41,19 +41,21 @@ data:
     {{- end }}
     MaxPlayers={{ .Values.server.maxPlayers }}
     
-    {{- if .Values.server.modIDs }}
+    {{- if .Values.server.serverSettings.modIDs }}
     # Mod configuration for ASA - converts YAML list to CSV string (no spaces)
-    # Template logic: {{range $i, $mod := .Values.server.modIDs}}{{if $i}},{{end}}{{ $mod }}{{end}}
+    # Template logic: {{range $i, $mod := .Values.server.serverSettings.modIDs}}{{if $i}},{{end}}{{ $mod }}{{end}}
     # Example input:  ["928029", "731604991", "1404697612"] 
     # Example output: ActiveMods=928029,731604991,1404697612
-    ActiveMods={{ range $i, $mod := .Values.server.modIDs }}{{if $i}},{{end}}{{ $mod }}{{end}}
+    ActiveMods={{ range $i, $mod := .Values.server.serverSettings.modIDs }}{{if $i}},{{end}}{{ $mod }}{{end}}
     {{- end }}
 
     {{- if .Values.server.serverSettings }}
     # Comprehensive ServerSettings from values.yaml
     # All settings are ASA-compatible and map to official [ServerSettings] documentation
     {{- range $key, $value := .Values.server.serverSettings }}
+    {{- if ne $key "modIDs" }}
     {{ $key }}={{ $value }}
+    {{- end }}
     {{- end }}
     {{- end }}
     
